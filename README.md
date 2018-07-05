@@ -34,8 +34,13 @@ If you change anything, before recompiling do:
 
 ```
 make clean
+make distclean
 rm -rf u-boot.*
 ```
+
+# Precompiled binary
+
+You can find a precompiled version under [Releases](https://github.com/fread-ink/fread-installer-u-boot/releases).
 
 # Testing using USB loader
 
