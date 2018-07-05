@@ -172,6 +172,7 @@ int do_printenv (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 
 int _do_setenv (int flag, int argc, char *argv[])
 {
+#if 0
 	int   i, len, oldval;
 	int   console = -1;
 	uchar *env, *nxt = NULL;
@@ -395,15 +396,18 @@ int _do_setenv (int flag, int argc, char *argv[])
 #endif	/* CONFIG_AMIGAONEG3SE */
 
 	return 0;
+#endif
 }
 
 int setenv (char *varname, char *varvalue)
 {
+#if 0
 	char *argv[4] = { "setenv", varname, varvalue, NULL };
 	if (varvalue == NULL)
 		return _do_setenv (0, 2, argv);
 	else
 		return _do_setenv (0, 3, argv);
+#endif
 }
 
 #ifdef CONFIG_HAS_UID
@@ -416,12 +420,14 @@ void forceenv (char *varname, char *varvalue)
 
 int do_setenv (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 {
+#if 0
 	if (argc < 2) {
 		cmd_usage(cmdtp);
 		return 1;
 	}
 
 	return _do_setenv (flag, argc, argv);
+#endif
 }
 
 /************************************************************************
@@ -596,6 +602,7 @@ int envmatch (uchar *s1, int i2)
 
 /**************************************************/
 
+#if 0
 U_BOOT_CMD(
 	printenv, CONFIG_SYS_MAXARGS, 1,	do_printenv,
 	"print environment variables",
@@ -638,4 +645,5 @@ U_BOOT_CMD(
 	"var [...]\n"
 	"    - run the commands in the environment variable(s) 'var'"
 );
+#endif
 #endif

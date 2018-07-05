@@ -102,7 +102,7 @@ extern int do_reset (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[]);
 typedef int boot_os_fn (int flag, int argc, char *argv[],
 			bootm_headers_t *images); /* pointers to os/initrd/fdt */
 
-#define CONFIG_BOOTM_LINUX 1
+//#define CONFIG_BOOTM_LINUX 1
 //#define CONFIG_BOOTM_NETBSD 1
 //#define CONFIG_BOOTM_RTEMS 1
 
@@ -967,6 +967,7 @@ static void *boot_get_kernel (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[]
 	return (void *)img_addr;
 }
 
+#if 0
 U_BOOT_CMD(
 	bootm,	CONFIG_SYS_MAXARGS,	1,	do_bootm,
 	"boot application image from memory",
@@ -1004,6 +1005,7 @@ U_BOOT_CMD(
 	"\tprep    - OS specific prep before relocation or go\n"
 	"\tgo      - start OS"
 );
+#endif
 
 /*******************************************************************/
 /* bootd - boot default image */

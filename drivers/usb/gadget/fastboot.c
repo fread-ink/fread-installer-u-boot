@@ -273,34 +273,38 @@ static void fastboot_init_endpoints (struct usb_device_instance *device)
 	    memset (&endpoint_instance[i], 0,
 		    sizeof (struct usb_endpoint_instance));
 
+
 	    endpoint_instance[i].endpoint_address =
 		epdesc[i - 1]->bEndpointAddress;
 
 	    endpoint_instance[i].rcv_attributes =
 		epdesc[i - 1]->bmAttributes;
 
-	    endpoint_instance[i].rcv_packetSize =
-		le16_to_cpu(epdesc[i - 1]->wMaxPacketSize);
+    endpoint_instance[i].rcv_packetSize =
+  		le16_to_cpu(epdesc[0]->wMaxPacketSize);
+
+    endpoint_instance[i].tx_packetSize =
+      le16_to_cpu(epdesc[0]->wMaxPacketSize);
 
 	    endpoint_instance[i].tx_attributes =
 		epdesc[i - 1]->bmAttributes;
 
-	    endpoint_instance[i].tx_packetSize =
-		le16_to_cpu(epdesc[i - 1]->wMaxPacketSize);
-
 	    endpoint_instance[i].tx_attributes =
 		epdesc[i - 1]->bmAttributes;
-
+  
 	    urb_link_init (&endpoint_instance[i].rcv);
+
 	    urb_link_init (&endpoint_instance[i].rdy);
+
 	    urb_link_init (&endpoint_instance[i].tx);
+
 	    urb_link_init (&endpoint_instance[i].done);
 
-	    if (endpoint_instance[i].endpoint_address & USB_DIR_IN)
+  if (endpoint_instance[i].endpoint_address & USB_DIR_IN) {
 		endpoint_instance[i].tx_urb =
 		    usbd_alloc_urb (device,
 				    &endpoint_instance[i]);
-	    else {
+  } else {
 		endpoint_instance[i].rcv_urb =
 		    usbd_alloc_urb (device,
 				    &endpoint_instance[i]);
@@ -320,8 +324,10 @@ static void fastboot_event_handler (struct usb_device_instance *device,
       case DEVICE_DE_CONFIGURED:
 
 	// if the cable is unplugged, exit
+
 	if (fastboot_addressed)
 	    fastboot_exit = 1;
+
 
 	fastboot_addressed = 0;
 	fastboot_configured = 0;
@@ -333,16 +339,16 @@ static void fastboot_event_handler (struct usb_device_instance *device,
 
       case DEVICE_CONFIGURED:
 	{
+
 	    struct usb_endpoint_instance *endpoint = &endpoint_instance[EP_OUT];
     
 	    fastboot_configured = 1;
 	    fastboot_init_endpoints (device);
-	    
+        udc_irq();
 	    endpoint->rcv_urb->buffer = (u8 *) endpoint->rcv_urb->buffer_data;
 	    endpoint->rcv_urb->buffer_length = FASTBOOT_RX_MAX;  // max fastboot command length
 	    endpoint->rcv_urb->status = 0;
 	    endpoint->rcv_urb->actual_length = 0;
-
 	    udc_endpoint_read(endpoint);
 	}
 	break;
@@ -350,6 +356,7 @@ static void fastboot_event_handler (struct usb_device_instance *device,
       default:
 	break;
     }
+
 }
 
 /* utility function for converting char* to wide string used by USB */
@@ -630,7 +637,7 @@ extern const u8 *get_board_id16(void);
 extern void board_reset(void);
 extern void board_power_off(void);
 extern unsigned int get_dram_size(void);
-extern int mmc_crc32_test (uint part, uint start, int size, uint crc);
+/*extern int mmc_crc32_test (uint part, uint start, int size, uint crc);*/
 extern int do_pass (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[]);
 extern int do_fail (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[]);
 
@@ -1030,10 +1037,10 @@ static void fastboot_parse_cmd(char *cmdbuf)
         src = (unsigned char *) strtok(NULL, " \0"); // get crc
         crc = (uint)simple_strtoul((char *)src, NULL, 16);
 
-        if (mmc_crc32_test(part_index, start, size, crc)) {
+        /*if (mmc_crc32_test(part_index, start, size, crc)) {
             fastboot_send_reply("FAILcrc failure");
             goto out;
-        }
+        }*/
 
         fastboot_send_reply("OKAY");
     }
@@ -1109,7 +1116,7 @@ static int fastboot_check_for_data(void) {
 	&endpoint_instance[1];
 
     if (endpoint->rcv_urb->status) {
-
+      printf("ERROR\n");
 	ERR("error receving usb packet: %d\n", endpoint->rcv_urb->status);
 
 	// requeue command buffer
@@ -1121,6 +1128,7 @@ static int fastboot_check_for_data(void) {
 	udc_endpoint_read(endpoint);
     }
     else if (endpoint->rcv_urb->actual_length) {
+
 	unsigned int nb = 0;
 	char *src = (char *) endpoint->rcv_urb->buffer;
 
@@ -1128,17 +1136,17 @@ static int fastboot_check_for_data(void) {
 	nb = endpoint->rcv_urb->actual_length;
 	src[nb] = 0;
 
-#ifdef __DEBUG_FASTBOOT__
-	{
+  #ifdef __DEBUG_FASTBOOT__
+  {
 	    int i;
 	    printf("bytes rcvd:");
 	    for (i = 0; i < nb; i++) {
-		if (!(i % 16)) printf("\n%d: ", i); 
-		printf("%c ", src[i]);
+        if (!(i % 16)) printf("\n%d: ", i); 
+        printf("%c ", src[i]);
 	    }
 	    printf("\n");
-	}
-#endif
+  }
+  #endif
 
 	fastboot_parse_cmd(src);
 
@@ -1151,41 +1159,45 @@ static int fastboot_check_for_data(void) {
 
 int fastboot_enable(int dev, int part)
 {
-    fastboot_addressed = 0;
-    fastboot_configured = 0;
-    fastboot_mmc_device = dev;
-    fastboot_mmc_partition = part;
+    while(1) {
 
-    printf("Entering fastboot mode...\n");
+      fastboot_addressed = 0;
+      fastboot_configured = 0;
+      fastboot_mmc_device = dev;
+      fastboot_mmc_partition = part;
 
-    if (fastboot_mmc_partition != FASTBOOT_USE_DEFAULT && fastboot_mmc_partition > 2) {
-	printf("Error: partition %d invalid\n", fastboot_mmc_partition);
-	return 1;
-    }
+      printf("Entering fastboot mode...\n");
 
-    if (udc_init()) {
-	puts("Error initializing USB!\n");
-	return 1;
-    }
+      if (fastboot_mmc_partition != FASTBOOT_USE_DEFAULT && fastboot_mmc_partition > 2) {
+        printf("Error: partition %d invalid\n", fastboot_mmc_partition);
+        return 1;
+      }
 
-    // get serial number
-    memcpy(serial_number, get_board_id16(), SERIAL_NUM_LEN);
-    serial_number[SERIAL_NUM_LEN] = 0;
+      if (udc_init()) {
+        puts("Error initializing USB!\n");
+        return 1;
+      }
 
-    fastboot_init_strings ();
-    fastboot_init_instances ();
+      // get serial number
+      memcpy(serial_number, get_board_id16(), SERIAL_NUM_LEN);
+      serial_number[SERIAL_NUM_LEN] = 0;
+
+      fastboot_init_strings ();
+      fastboot_init_instances ();
 	
-    udc_startup_events(device_instance);
-    udc_connect();
+      udc_startup_events(device_instance);
+      udc_connect();
     
-    fastboot_exit = 0;
+      fastboot_exit = 0;
 
-    while (!fastboot_exit) {
-	udc_irq();
-
-	if (fastboot_configured) {
-	    fastboot_check_for_data();
-	}
+      while (!fastboot_exit) {
+        udc_irq();
+    
+        if (fastboot_configured) {
+          //        printf("FASTBOOT checking\n");
+          fastboot_check_for_data();
+        }
+      }
     }
 
     udc_disable();

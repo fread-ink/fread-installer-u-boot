@@ -25,6 +25,7 @@
 #include <common.h>
 #include <command.h>
 
+#if 0
 #ifdef CONFIG_GADGET_FASTBOOT
 #include <usb/fastboot.h>
 
@@ -51,6 +52,7 @@ U_BOOT_CMD(
 	fastboot, 3, 1, do_fastboot,
 	"Fastboot",
 	"fastboot");
+#endif
 #endif
 
 #ifdef CONFIG_GADGET_FILE_STORAGE

@@ -273,6 +273,7 @@ static __inline__ int abortboot(int bootdelay)
 
 void main_loop (void)
 {
+#if 0
 #ifndef CONFIG_SYS_HUSH_PARSER
 	static char lastcommand[CONFIG_SYS_CBSIZE] = { 0, };
 	int len;
@@ -512,6 +513,7 @@ void main_loop (void)
 		}
 	}
 #endif /*CONFIG_SYS_HUSH_PARSER*/
+#endif
 }
 
 #ifdef CONFIG_BOOT_RETRY_TIME
@@ -973,6 +975,7 @@ int readline (const char *const prompt)
 
 int readline_into_buffer (const char *const prompt, char * buffer)
 {
+#if 0
 	char *p = buffer;
 #ifdef CONFIG_CMDLINE_EDITING
 	unsigned int len=MAX_CMDBUF_SIZE;
@@ -1095,6 +1098,7 @@ int readline_into_buffer (const char *const prompt, char * buffer)
 	}
 #ifdef CONFIG_CMDLINE_EDITING
 	}
+#endif
 #endif
 }
 
@@ -1311,6 +1315,7 @@ static void process_macros (const char *input, char *output)
 
 int run_command (const char *cmd, int flag)
 {
+#if 0
 	cmd_tbl_t *cmdtp;
 	char cmdbuf[CONFIG_SYS_CBSIZE];	/* working copy of cmd		*/
 	char *token;			/* start of token in cmdbuf	*/
@@ -1432,6 +1437,7 @@ int run_command (const char *cmd, int flag)
 	}
 
 	return rc ? rc : repeatable;
+#endif
 }
 
 /****************************************************************************/

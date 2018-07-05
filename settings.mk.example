@@ -1,0 +1,4 @@
+
+TYPE=prod # see u-boot-2009.08/board/imx50_yoshi/config.mk
+ARCH=arm
+CROSS_COMPILE=arm-linux-gnueabihf-

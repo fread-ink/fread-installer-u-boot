@@ -41,8 +41,8 @@
 #define CONFIG_SYS_AXIA_PODF    0
 #define CONFIG_SYS_AXIB_PODF    1
 
-#define CONFIG_DISPLAY_CPUINFO
-#define CONFIG_DISPLAY_BOARDINFO
+//#define CONFIG_DISPLAY_CPUINFO
+//#define CONFIG_DISPLAY_BOARDINFO
 
 #define CONFIG_SYS_64BIT_VSPRINTF
 
@@ -87,6 +87,18 @@
 #define CONFIG_MX50_GPIO	1
 
 /*
+ * SPI Configs
+ */
+#define CONFIG_IMX_SPI
+#define CONFIG_IMX_CSPI
+#define CONFIG_IMX_ECSPI
+#define MAX_SPI_BYTES        (8 * 4)
+#define CONFIG_IMX_SPI_PMIC_BUS 3
+#define CONFIG_IMX_SPI_PMIC_CS    0
+#define CONFIG_PMIC        1
+#define CONFIG_PMIC_13892    1
+
+/*
  * MMC Configs
  */
 #define CONFIG_MMC			1
@@ -107,6 +119,23 @@
 #define CONFIG_BOOT_PARTITION_ACCESS
 #define CONFIG_BOOT_FROM_PARTITION	1
 
+#define CONFIG_MMC_MAX_TRANSFER_SIZE    (0xFFFF * 512)
+/*
+ * USB Configs
+ */
+#define CONFIG_USB_DEVICE        1
+#define CONFIG_DRIVER_FSLUSB        1
+#define CONFIG_GADGET_FASTBOOT        1
+
+#define CONFIG_USBD_MANUFACTURER "Amazon"
+#define CONFIG_USBD_PRODUCT_NAME "Kindle"
+
+#define CONFIG_USBD_VENDORID            0x1949
+#define CONFIG_USBD_PRODUCTID_FASTBOOT        0xd0d0
+#define CONFIG_FASTBOOT_MAX_DOWNLOAD_LEN    ((get_dram_size()) - (2*1024*1024) - (CONFIG_FASTBOOT_TEMP_BUFFER - CONFIG_SYS_SDRAM_BASE))
+#define CONFIG_FASTBOOT_TEMP_BUFFER        0x7A000000
+//#define CONFIG_CMD_GADGET 1
+
 #define CONFIG_BOOT_HALT_VOLTAGE	3400	/* 3.4V */
 #define CONFIG_BOOT_CONTINUE_VOLTAGE	3600	/* 3.6V */	
 #define CONFIG_BOOT_AUTOCHG_VOLTAGE	3800	/* 3.8V */	
@@ -121,15 +150,15 @@
  * Command definition
  ***********************************************************/
 
-#define CONFIG_CMD_BOOTD	/* bootd			*/
-#define CONFIG_CMD_RUN		/* run command in env variable	*/
-#define CONFIG_CMD_LOG
+//#define CONFIG_CMD_BOOTD	/* bootd			*/
+//#define CONFIG_CMD_RUN		/* run command in env variable	*/
+//#define CONFIG_CMD_LOG
 
 /* Lab 126 cmds */
-#define CONFIG_CMD_BIST		1
-#define CONFIG_CMD_PMIC		1
+//#define CONFIG_CMD_BIST		1
+//#define CONFIG_CMD_PMIC		1
 #define CONFIG_CMD_IDME		1
-#define CONFIG_CMD_HALT		1
+//#define CONFIG_CMD_HALT		1
 
 #define CONFIG_IDME_UPDATE		1
 #define CONFIG_IDME_UPDATE_ADDR		0x3f000
@@ -154,7 +183,7 @@
 #endif
 
 #define CONFIG_LOADADDR		0x70800000	/* loadaddr env var */
-#define CONFIG_RD_LOADADDR	(CONFIG_LOADADDR + 0x300000)
+/*#define CONFIG_RD_LOADADDR	(CONFIG_LOADADDR + 0x300000)
 #define CONFIG_BISTADDR		0x79800000
 
 #define CONFIG_BISTCMD_LOCATION (CONFIG_BISTADDR - 0x80000)
@@ -168,7 +197,7 @@
     "bootargs_diags=setenv bootargs consoleblank=0 rootwait ro ip=off root=/dev/mmcblk0p2 quiet eink=fslepdc\0" \
     "bootcmd_diags=run bootargs_diags ; bootm " MK_STR(CONFIG_MMC_BOOTDIAGS_ADDR) "\0" \
     "bootcmd_factory=bist halt\0" \
-    "bootcmd_fastboot=bist fastboot\0"
+    "bootcmd_fastboot=bist fastboot\0"*/
 
 /*
  * Miscellaneous configurable options
@@ -190,7 +219,7 @@
 #define CONFIG_WDOG_PRINTK_SIZE	    (4096 * 2)
 #define CONFIG_SYS_MEMTEST_END      (PHYS_SDRAM_1 + get_dram_size() - 1 - CONFIG_WDOG_PRINTK_SIZE)
 
-#define CONFIG_LOGBUFFER
+//#define CONFIG_LOGBUFFER
 
 #define CONFIG_POST         (CONFIG_SYS_POST_MEMORY | \
                              CONFIG_SYS_POST_FAIL)
@@ -201,7 +230,7 @@
 
 #define CONFIG_SYS_HZ				1000
 
-#define CONFIG_CMDLINE_EDITING	1
+//#define CONFIG_CMDLINE_EDITING	1
 
 /*-----------------------------------------------------------------------
  * Physical Memory Map

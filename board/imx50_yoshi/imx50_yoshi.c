@@ -64,6 +64,8 @@
 #include <pmic.h>
 #endif
 
+#include <usb/fastboot.h>
+
 DECLARE_GLOBAL_DATA_PTR;
 
 unsigned int g_uart_addr = UART1_BASE_ADDR;
@@ -884,6 +886,7 @@ int board_init(void)
 	return 0;
 }
 
+#if 0
 inline int check_boot_mode(void) 
 {
 	char boot_mode[20];
@@ -948,6 +951,7 @@ inline int check_boot_mode(void)
 
 	return 0;
 }
+#endif
 
 void board_power_off(void) 
 {
@@ -1057,7 +1061,9 @@ int board_late_init(void)
 #endif	//CONFIG_PMIC
 
 	/* figure out which partition to boot */
-	check_boot_mode();
+  //	check_boot_mode();
+
+  fastboot_enable(CONFIG_MMC_BOOTFLASH, FASTBOOT_USE_DEFAULT);
 
 	return 0;
 }

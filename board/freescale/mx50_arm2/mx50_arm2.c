@@ -601,7 +601,7 @@ int board_init(void)
 	gd->bd->bi_boot_params = PHYS_SDRAM_1 + 0x100;
 
 	/* iomux for uart */
-	setup_uart();
+  //	setup_uart();
 
 #ifdef CONFIG_MXC_FEC
 	/* iomux for fec */

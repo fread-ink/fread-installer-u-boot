@@ -15,10 +15,39 @@
 #include <common.h>
 #include <post.h>
 #include "mx50_i2c.h"
-#include <boardid.h>
+//#include <boardid.h>
 #ifdef CONFIG_PMIC
 #include <pmic.h>
 #endif
+
+// Taken from platform/include/boardid.h
+#define BOARD_ID_N              3
+#define BOARD_ID_REV_N          5
+#define BOARD_ID_REV_LEN        BOARD_ID_REV_N - BOARD_ID_N
+
+#define BOARD_ID_YOSHI                "000"
+#define BOARD_ID_YOSHI_3              "00003"
+#define BOARD_ID_TEQUILA              "003"
+#define BOARD_ID_TEQUILA_EVT1         "00301"
+#define BOARD_ID_FINKLE               "004"
+#define BOARD_ID_WHITNEY              "005"
+#define BOARD_ID_WHITNEY_EVT1         "00512"
+#define BOARD_ID_WHITNEY_WFO          "006"
+#define BOARD_ID_WHITNEY_WFO_EVT1     "00601"
+
+#define BOARD_IS_(id, b, n)	(strncmp((id), (b), (n)) == 0)
+#define BOARD_REV_GRT_(id, b) (strncmp((id+BOARD_ID_N), (b+BOARD_ID_N), BOARD_ID_REV_LEN) > 0)
+#define BOARD_REV_GRT_EQ_(id, b) (strncmp((id+BOARD_ID_N), (b+BOARD_ID_N), BOARD_ID_REV_LEN) >= 0)
+
+#define BOARD_REV_GREATER(id, b) (BOARD_IS_((id), (b), BOARD_ID_N) && BOARD_REV_GRT_((id), (b)))
+#define BOARD_REV_GREATER_EQ(id, b) (BOARD_IS_((id), (b), BOARD_ID_N) && BOARD_REV_GRT_EQ_((id), (b)))
+
+#define BOARD_IS_YOSHI(id)         BOARD_IS_((id), BOARD_ID_YOSHI,         BOARD_ID_N)
+#define BOARD_IS_TEQUILA(id)       BOARD_IS_((id), BOARD_ID_TEQUILA,       BOARD_ID_N)
+#define BOARD_IS_FINKLE(id)        BOARD_IS_((id), BOARD_ID_FINKLE,        BOARD_ID_N)
+#define BOARD_IS_WHITNEY(id)       BOARD_IS_((id), BOARD_ID_WHITNEY,       BOARD_ID_N)
+#define BOARD_IS_WHITNEY_WFO(id)   BOARD_IS_((id), BOARD_ID_WHITNEY_WFO,   BOARD_ID_N)
+
 
 #define I2C_ADDR_PROXIMITY                 0x0D // bus 0
 #define I2C_ADDR_BATTERY                   0x55 // bus 1
