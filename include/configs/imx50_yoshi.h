@@ -28,10 +28,11 @@
 #define CONFIG_ARMV7		1	/* This is armv7 Cortex-A8 CPU core */
 #define CONFIG_MXC
 #define CONFIG_MX50
+#define CONFIG_LPDDR2
 #define CONFIG_FLASH_HEADER
 #define CONFIG_FLASH_HEADER_OFFSET 0x400
 
-#define CONFIG_SKIP_RELOCATE_UBOOT
+//#define CONFIG_SKIP_RELOCATE_UBOOT
 
 #define CONFIG_ARCH_CPU_INIT
 
@@ -47,7 +48,7 @@
 #define CONFIG_SYS_64BIT_VSPRINTF
 
 #define BOARD_LATE_INIT
-#define CONFIG_IRAM_BOOT	1
+//#define CONFIG_IRAM_BOOT	1
 #define CONFIG_ZQ_CALIB		1
 
 #define CONFIG_PANIC_HANG  /* Do not reboot if a panic occurs */

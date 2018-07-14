@@ -20,6 +20,7 @@
 #include <config.h>
 #include <asm/arch/mx50.h>
 
+        
 #ifdef	CONFIG_FLASH_HEADER
 #ifndef CONFIG_FLASH_HEADER_OFFSET
 # error "Must define the offset of flash header"
@@ -148,6 +149,10 @@ plugin_start:
 	str r1, [r0, #0x80]
 	str r1, [r0, #0x84]
 
+#ifdef CONFIG_IRAM_BOOT
+# error "FOK"
+#endif
+        
 #ifndef CONFIG_IRAM_BOOT
 #if defined(CONFIG_LPDDR2)
 	bl lpddr2_init
