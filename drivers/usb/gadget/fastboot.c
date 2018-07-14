@@ -489,11 +489,10 @@ static void fastboot_init_instances (void)
     }
 }
 
-static int fastboot_send_reply(char *reply) {
+static int fastboot_send_reply_actual(char *reply, unsigned int replylen) {
     
     struct usb_endpoint_instance *endpoint = &endpoint_instance[EP_IN];
     struct urb *current_urb = NULL;
-    unsigned int replylen = strlen(reply);
 
     current_urb = endpoint->tx_urb;
 
@@ -547,6 +546,10 @@ static int fastboot_send_reply(char *reply) {
     }
 
     return 0;
+}
+
+static int fastboot_send_reply(char *reply) {
+  return fastboot_send_reply_actual(reply, strlen(reply));
 }
 
 static unsigned hex2unsigned(const char *x)
@@ -644,14 +647,14 @@ extern int do_fail (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[]);
 static int kernel_addr = CONFIG_LOADADDR;
 static unsigned int kernel_size = 0;
 
-#define REPLY_BUF_LEN	100
+#define REPLY_BUF_LEN	4096
 
 /*
  * Parse a fastboot cmd.  cmdbuf must be NULL-terminated
  */
 static void fastboot_parse_cmd(char *cmdbuf) 
 {
-    char reply_buf[REPLY_BUF_LEN];
+    char* reply_buf = NULL;
     unsigned int rx_length;
     unsigned int flash_addr;
     unsigned char *src;
@@ -659,9 +662,18 @@ static void fastboot_parse_cmd(char *cmdbuf)
     unsigned int part_size;
     unsigned int part_index;
     unsigned int mmc_partition;
+    unsigned int count;
+    int i;
+    int ret;
 #ifdef CONFIG_GENERIC_MMC
     struct mmc *mmc;
 #endif
+
+    reply_buf = malloc(4096 * sizeof(char));
+    if(!reply_buf) {
+      printf("Could not allocate full reply buffer\n");
+      reply_buf = malloc(100 * sizeof(char));      
+    }
 
     struct usb_endpoint_instance *endpoint = &endpoint_instance[EP_OUT];
 
@@ -729,6 +741,34 @@ static void fastboot_parse_cmd(char *cmdbuf)
 #endif
 
         fastboot_send_reply(reply_buf);
+
+    }
+    else if (strncmp(cmdbuf, "partlist", 8) == 0) {
+
+      memcpy(reply_buf, "OKAY", 4);
+      count = 4;
+
+      ret = sprintf(reply_buf+count, "%-20s %12s %12s %12s\n\n", "partition", "start_address", "size", "end_address");
+      count += ret;
+
+      for (i = 0; i < CONFIG_NUM_PARTITIONS; i++) { 
+
+        ret = sprintf(reply_buf+count, "%-20s", partition_info[i].name);
+        count += ret;
+        
+        ret = sprintf(reply_buf+count, "    0x%08x\t", partition_info[i].address);
+        count += ret;
+
+        ret = sprintf(reply_buf+count, "    0x%08x\t", partition_info[i].size);
+        count += ret;
+
+        ret = sprintf(reply_buf+count, "    0x%08x\n", partition_info[i].address + partition_info[i].size);
+        count += ret;
+      }
+      
+      fastboot_send_reply_actual(reply_buf, count);
+
+      goto out;
     }
     else if (strncmp(cmdbuf, "download", 8) == 0) {
 	/* Write data to memory which will be later used
@@ -1205,30 +1245,5 @@ int fastboot_enable(int dev, int part)
     return 0;
 }
 
-int usb_post_test (int flags)
-{
-	int ret = 0;
 
-	printf("Connect USB to high-speed host\n");
-	printf("On host, execute fastboot getvar serialno\n");
-	printf("Then disconnect to exit this test\n");
-
-	fastboot_post_flags = 0;
-	ret = fastboot_enable(CONFIG_MMC_BOOTFLASH, FASTBOOT_USE_DEFAULT);
-	if (ret) {
-		printf("Failure returned by fastboot = %d\n", ret);
-		return ret;
-	}
-
-	if (!(fastboot_post_flags & 1)) {
-		printf("Not connected to high speed host\n");
-		return -2;
-	}
-
-	if (!(fastboot_post_flags & 2)) {
-		printf("No fastboot command received\n");
-		return -3;
-	}
-	return 0;
-}
 
