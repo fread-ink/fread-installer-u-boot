@@ -21,7 +21,6 @@
 # MA 02111-1307 USA
 #
 
--include ./settings.mk
 
 VERSION = 2009
 PATCHLEVEL = 08

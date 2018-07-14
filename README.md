@@ -5,14 +5,6 @@ This is based on a partial fastboot patch [provided by Eureka on the mobileread 
 
 # Compiling
 
-Copy `settings.mk.example` to `settings.mk`:
-
-```
-cp settings.mk.example settings.mk
-```
-
-Edit `CROSS_COMPILE` in `settings.mk` if you intend to use a cross-compiler other than `arm-linux-gnueabihf-`.
-
 Make sure you have the appropriate compiler and tools installed:
 
 ```
@@ -22,6 +14,10 @@ sudo apt install build-essential gcc-4.8-arm-linux-gnueabihf
 To compile:
 
 ```
+TYPE=prod # see u-boot-2009.08/board/imx50_yoshi/config.mk
+ARCH=arm
+CROSS_COMPILE=arm-linux-gnueabihf- # change this if you want to use a different cross-compiler
+
 make imx50_yoshi_config
 make all
 ```
