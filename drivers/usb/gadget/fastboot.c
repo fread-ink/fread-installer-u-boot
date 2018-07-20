@@ -491,61 +491,62 @@ static void fastboot_init_instances (void)
 
 static int fastboot_send_reply_actual(char *reply, unsigned int replylen) {
     
-    struct usb_endpoint_instance *endpoint = &endpoint_instance[EP_IN];
-    struct urb *current_urb = NULL;
+  struct usb_endpoint_instance *endpoint = &endpoint_instance[EP_IN];
+  struct urb *current_urb = NULL;
 
-    current_urb = endpoint->tx_urb;
+  current_urb = endpoint->tx_urb;
 
-    DBG("begin.  reply=%s (%d)\n", reply, replylen);
+  DBG("begin.  reply=%s (%d)\n", reply, replylen);
 
-    if (replylen) {
+  if (replylen) {
 
-	int space_avail;
-	int popnum;
-	int total = 0;
+    int space_avail;
+    int popnum;
+    int total = 0;
 
-	/* Break buffer into urb sized pieces,
-	 * and link each to the endpoint
-	 */
-	while (replylen > 0) {
+    /* Break buffer into urb sized pieces,
+     * and link each to the endpoint
+     */
+    while (replylen > 0) {
 
-	    if (!current_urb) {
-		printf ("%s: current_urb is NULL, length %d\n", __FUNCTION__, replylen);
-		return total;
-	    }
+      if (!current_urb) {
+        printf ("%s: current_urb is NULL, length %d\n", __FUNCTION__, replylen);
+        return total;
+      }
 
-	    current_urb->actual_length = 0;
-	    current_urb->buffer = (unsigned char *) current_urb->buffer_data;
-	    current_urb->buffer_length = (URB_BUF_SIZE * sizeof(current_urb->buffer_data[0]));
-	    current_urb->status = 0;
+      current_urb->actual_length = 0;
+      current_urb->buffer = (unsigned char *) current_urb->buffer_data;
+      current_urb->buffer_length = (URB_BUF_SIZE * sizeof(current_urb->buffer_data[0]));
+      current_urb->status = 0;
 
-	    space_avail = current_urb->buffer_length;
-	    popnum = MIN (space_avail, replylen);
-	    if (popnum == 0)
-		break;
+      space_avail = current_urb->buffer_length;
+      popnum = MIN (space_avail, replylen);
+      if (popnum == 0)
+        break;
 
-	    memcpy(current_urb->buffer + total, reply + total, popnum);
+      memcpy(current_urb->buffer, reply + total, popnum);
 
-	    current_urb->actual_length += popnum;
-	    total += popnum;
-	    replylen -= popnum;
+      current_urb->actual_length += popnum;
+      total += popnum;
+      replylen -= popnum;
 
-	    if(udc_endpoint_write (endpoint)){
-		/* Write pre-empted by RX */
-		ERR("ep write fail!\n");
-		return -1;
-	    }
-	    
-	}/* end while */
+      if(udc_endpoint_write (endpoint)){
+        /* Write pre-empted by RX */
+        ERR("ep write fail!\n");
+        return -1;
+      }
 
-	// wait for complete irq
-	while (current_urb->actual_length)
-	    udc_irq();
-
-	return total;
-    }
-
-    return 0;
+      // wait for complete irq
+      while (current_urb->actual_length)
+        udc_irq();
+    
+    }/* end while */
+  
+  
+    return total;
+  }
+    
+  return 0;
 }
 
 static int fastboot_send_reply(char *reply) {
@@ -669,11 +670,15 @@ static void fastboot_parse_cmd(char *cmdbuf)
     struct mmc *mmc;
 #endif
 
+    /*
     reply_buf = malloc(4096 * sizeof(char));
     if(!reply_buf) {
       printf("Could not allocate full reply buffer\n");
       reply_buf = malloc(100 * sizeof(char));      
     }
+    */
+
+    reply_buf = (unsigned char *) kernel_addr;
 
     struct usb_endpoint_instance *endpoint = &endpoint_instance[EP_OUT];
 
@@ -745,10 +750,10 @@ static void fastboot_parse_cmd(char *cmdbuf)
     }
     else if (strncmp(cmdbuf, "partlist", 8) == 0) {
 
-      memcpy(reply_buf, "OKAY", 4);
+      memcpy(reply_buf, "DISP", 4);
       count = 4;
 
-      ret = sprintf(reply_buf+count, "%-20s %12s %12s %12s\n\n", "partition", "start_address", "size", "end_address");
+      ret = sprintf(reply_buf+count, "%-20s %13s %13s %13s\n\n", "partition", "start_address", "size", "end_address");
       count += ret;
 
       for (i = 0; i < CONFIG_NUM_PARTITIONS; i++) { 
@@ -756,16 +761,18 @@ static void fastboot_parse_cmd(char *cmdbuf)
         ret = sprintf(reply_buf+count, "%-20s", partition_info[i].name);
         count += ret;
         
-        ret = sprintf(reply_buf+count, "    0x%08x\t", partition_info[i].address);
+        ret = sprintf(reply_buf+count, "    0x%08x", partition_info[i].address);
         count += ret;
 
-        ret = sprintf(reply_buf+count, "    0x%08x\t", partition_info[i].size);
+        ret = sprintf(reply_buf+count, "    0x%08x", partition_info[i].size);
         count += ret;
 
         ret = sprintf(reply_buf+count, "    0x%08x\n", partition_info[i].address + partition_info[i].size);
         count += ret;
       }
       
+      reply_buf[count] = 0;
+      count += 1;
       fastboot_send_reply_actual(reply_buf, count);
 
       goto out;
