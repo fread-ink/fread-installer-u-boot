@@ -580,15 +580,15 @@ static unsigned hex2unsigned(const char *x)
     return n;
 }
 
-static void num_to_hex8(unsigned n, char *out)
+static void num_to_hex(int size, unsigned n, char *out)
 {
     static char tohex[16] = "0123456789abcdef";
     int i;
-    for(i = 7; i >= 0; i--) {
+    for(i = size - 1; i >= 0; i--) {
         out[i] = tohex[n & 15];
         n >>= 4;
     }
-    out[8] = 0;
+    out[size] = 0;
 }
 
 static unsigned int fastboot_find_partition(const char *partition_name, 
@@ -648,7 +648,20 @@ extern int do_fail (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[]);
 static int kernel_addr = CONFIG_LOADADDR;
 static unsigned int kernel_size = 0;
 
-#define REPLY_BUF_LEN	4096
+// TODO not actual size since we're now using CONFIG_LOADADDR
+// rather than statically allocated memory
+#define REPLY_BUF_LEN	4096 
+
+void requeue_command_buffer(struct usb_endpoint_instance *endpoint) {
+
+    endpoint->rcv_urb->buffer = (u8 *) endpoint->rcv_urb->buffer_data;
+    endpoint->rcv_urb->buffer_length = FASTBOOT_RX_MAX;  
+    endpoint->rcv_urb->status = 0;
+    endpoint->rcv_urb->actual_length = 0;
+
+    udc_endpoint_read(endpoint);
+}
+
 
 /*
  * Parse a fastboot cmd.  cmdbuf must be NULL-terminated
@@ -658,25 +671,23 @@ static void fastboot_parse_cmd(char *cmdbuf)
     char* reply_buf = NULL;
     unsigned int rx_length;
     unsigned int flash_addr;
-    unsigned char *src;
+    unsigned int upload_size;
+    unsigned int uploaded;
+    unsigned int ram_free;
+    unsigned char* src;
+    unsigned char* data_len_ptr;
     unsigned int pktsize, len, dest;
     unsigned int part_size;
     unsigned int part_index;
     unsigned int mmc_partition;
+    unsigned int mmc_source;
+    unsigned char* ram_dest;
     unsigned int count;
     int i;
     int ret;
 #ifdef CONFIG_GENERIC_MMC
     struct mmc *mmc;
 #endif
-
-    /*
-    reply_buf = malloc(4096 * sizeof(char));
-    if(!reply_buf) {
-      printf("Could not allocate full reply buffer\n");
-      reply_buf = malloc(100 * sizeof(char));      
-    }
-    */
 
     reply_buf = (unsigned char *) kernel_addr;
 
@@ -756,6 +767,12 @@ static void fastboot_parse_cmd(char *cmdbuf)
       ret = sprintf(reply_buf+count, "%-20s %13s %13s %13s\n\n", "partition", "start_address", "size", "end_address");
       count += ret;
 
+      mmc = find_mmc_device(fastboot_mmc_device);
+      if(mmc == NULL) {
+        fastboot_send_reply("FAILCouldn't find flash device");
+        goto out;
+      }
+
       for (i = 0; i < CONFIG_NUM_PARTITIONS; i++) { 
 
         ret = sprintf(reply_buf+count, "%-20s", partition_info[i].name);
@@ -764,10 +781,16 @@ static void fastboot_parse_cmd(char *cmdbuf)
         ret = sprintf(reply_buf+count, "    0x%08x", partition_info[i].address);
         count += ret;
 
-        ret = sprintf(reply_buf+count, "    0x%08x", partition_info[i].size);
+        part_size = partition_info[i].size;
+
+        if(part_size == PARTITION_FILL_SPACE) {
+          part_size = mmc->capacity - partition_info[i].address;
+        }
+
+        ret = sprintf(reply_buf+count, "    0x%08x", part_size);
         count += ret;
 
-        ret = sprintf(reply_buf+count, "    0x%08x\n", partition_info[i].address + partition_info[i].size);
+        ret = sprintf(reply_buf+count, "    0x%08x\n", partition_info[i].address + part_size);
         count += ret;
       }
       
@@ -800,7 +823,7 @@ static void fastboot_parse_cmd(char *cmdbuf)
 	DBG("recv data addr=%x size=%x\n", rx_addr, rx_length); 
         
 	strcpy(reply_buf,"DATA");
-        num_to_hex8(rx_length, reply_buf + 4);
+  num_to_hex(8, rx_length, reply_buf + 4);
 	reply_buf[12] = 0;
 
         fastboot_send_reply(reply_buf);
@@ -838,14 +861,70 @@ static void fastboot_parse_cmd(char *cmdbuf)
 	printf("done\n");
 	
 	fastboot_send_reply("OKAY");    
-    }
-    else if (strncmp(cmdbuf, "verify", 6) == 0) {
+    } else if (strncmp(cmdbuf, "verify", 6) == 0) {
         /* Send a digital signature to verify the downloaded
 	   data.  Required if the bootloader is "secure"
 	   otherwise "flash" and "boot" will be ignored. */
 	fastboot_send_reply("FAILunsupported command");
-    }
-    else if (strncmp(cmdbuf, "flash", 5) == 0) {
+
+  // upload mmc contents to fastboot client
+    } else if (strncmp(cmdbuf, "upload", 6) == 0) {
+      mmc_source = 0; // offset into mmc flash memory
+      ram_dest = (unsigned char *) CONFIG_LOADADDR; // where in ram to copy
+
+      // assuming that mmc device has already been initialized
+      // which should be the case if fastboot_mmc_device is the boot device
+      // which it always is on kindle 4th and 5th gen
+
+      mmc = find_mmc_device(fastboot_mmc_device);
+      if(mmc == NULL) {
+        fastboot_send_reply("FAILCouldn't find flash device");
+        goto out;
+      }
+
+      // calculate how much free SDRAM we have
+      // CONFIG_SYS_SDRAM_BASE is where the SDRAM is memory-mapped (0x70000000)
+      // CONFIG_LOADADDR is where the kernel is loaded into SDRAM (0x70800000)
+      ram_free = CONFIG_SYS_SDRAM_SIZE - (CONFIG_LOADADDR - CONFIG_SYS_SDRAM_BASE) - 1024 * 1024; // TODO skipping the last megabyte for now
+        
+      uploaded = 0;
+
+      // this is all we can fit into ram
+      upload_size = MIN(mmc->capacity, ram_free);
+
+      strcpy(ram_dest, "ATAD");
+      data_len_ptr = ram_dest + 4; // where the length will be copied
+      ram_dest += 4 + 33; // reserve space for command and length
+      uploaded += 4 + 33;
+
+      len = 0;
+
+      while(upload_size > 0) {
+        pktsize = MIN(upload_size, CONFIG_MMC_MAX_TRANSFER_SIZE);
+
+        printf("read %d bytes to 0x%x from 0x%x\n", pktsize, ram_dest, (unsigned int) mmc_source);
+        //        DBG("read %d bytes to 0x%x from 0x%x\n", pktsize, reply_buf+len, (unsigned int) );
+
+        if(mmc_read(fastboot_mmc_device, mmc_source, ram_dest, pktsize)) {
+          fastboot_send_reply("FAILFlash read fail!");
+          goto out;
+        }
+
+        mmc_source += pktsize;
+        ram_dest += pktsize;
+        upload_size -= pktsize;
+        uploaded += pktsize;
+
+      }
+
+      // add the data length (with a null terminator)
+      num_to_hex(32, uploaded - 4 - 33, data_len_ptr);
+
+      fastboot_send_reply_actual((unsigned char *) CONFIG_LOADADDR, uploaded);
+
+      goto out;
+
+   } else if (strncmp(cmdbuf, "flash", 5) == 0) {
 
 	/* Write the previously downloaded image to the
 	   named partition (if possible). */
@@ -907,7 +986,7 @@ static void fastboot_parse_cmd(char *cmdbuf)
 	}
 #endif
 
-	printf("flashing %s to MMC%d, partition %d\n", cmdbuf + 6, fastboot_mmc_device, mmc_partition);
+	DBG("flashing %s to MMC%d, partition %d\n", cmdbuf + 6, fastboot_mmc_device, mmc_partition);
 
 	while (len > 0) {
 	    pktsize = MIN(len, BUFFER_LEN);
@@ -916,7 +995,7 @@ static void fastboot_parse_cmd(char *cmdbuf)
 
 	    if (mmc_write(fastboot_mmc_device, src, dest, pktsize)) {
 		fastboot_send_reply("FAILFlash write fail!");
-		printf("flash write fail!\n");
+		DBG("flash write fail!\n");
 		goto out;
 	    }
 
@@ -924,10 +1003,11 @@ static void fastboot_parse_cmd(char *cmdbuf)
 	    dest += pktsize;
 	    len -= pktsize;
 
-	    if (pktsize == BUFFER_LEN)
-		printf(".");
+	    if (pktsize == BUFFER_LEN) {
+        DBG(".");
+      }
 	}
-	printf("done.\n");
+	DBG("done.\n");
 
 #ifdef CONFIG_BOOT_PARTITION_ACCESS
 	/* Switch partition back to user */
@@ -1147,13 +1227,7 @@ static void fastboot_parse_cmd(char *cmdbuf)
     fastboot_post_flags |= 2;		// POST test requires a command
 
   out:
-    // requeue command buffer
-    endpoint->rcv_urb->buffer = (u8 *) endpoint->rcv_urb->buffer_data;
-    endpoint->rcv_urb->buffer_length = FASTBOOT_RX_MAX;  
-    endpoint->rcv_urb->status = 0;
-    endpoint->rcv_urb->actual_length = 0;
-
-    udc_endpoint_read(endpoint);
+    requeue_command_buffer(endpoint);
 
 }
 
