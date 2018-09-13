@@ -886,7 +886,14 @@ static void fastboot_parse_cmd(char *cmdbuf)
       // CONFIG_SYS_SDRAM_BASE is where the SDRAM is memory-mapped (0x70000000)
       // CONFIG_LOADADDR is where the kernel is loaded into SDRAM (0x70800000)
       ram_free = CONFIG_SYS_SDRAM_SIZE - (CONFIG_LOADADDR - CONFIG_SYS_SDRAM_BASE) - 1024 * 1024; // TODO skipping the last megabyte for now
-        
+
+
+      ram_dest = (unsigned char *) CONFIG_LOADADDR; // where in ram to copy
+
+      strcpy(ram_dest, "ATAD");
+      num_to_hex(32, mmc->capacity, ram_dest + 4); // add the data length (with a null terminator)
+      fastboot_send_reply_actual(ram_dest, 4 + 34);
+
       upload_size = mmc->capacity;
 
       while(upload_size > 0) {
@@ -897,13 +904,6 @@ static void fastboot_parse_cmd(char *cmdbuf)
 
         // this is all we can fit into ram
         upload_chunk_size = MIN(upload_size, ram_free);
-
-        if(upload_size == mmc->capacity) { // at the beginning only do
-          strcpy(ram_dest, "ATAD");
-          num_to_hex(32, mmc->capacity, ram_dest + 4); // add the data length (with a null terminator)
-          ram_dest += 4 + 33; // move pointer psat command+length header
-          uploaded += 4 + 33;
-        }
 
         while(upload_chunk_size > 0) {
           pktsize = MIN(upload_chunk_size, CONFIG_MMC_MAX_TRANSFER_SIZE);
