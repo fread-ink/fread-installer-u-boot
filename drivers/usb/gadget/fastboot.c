@@ -672,10 +672,10 @@ static void fastboot_parse_cmd(char *cmdbuf)
     unsigned int rx_length;
     unsigned int flash_addr;
     unsigned int upload_size;
+    unsigned int upload_chunk_size;
     unsigned int uploaded;
     unsigned int ram_free;
     unsigned char* src;
-    unsigned char* data_len_ptr;
     unsigned int pktsize, len, dest;
     unsigned int part_size;
     unsigned int part_index;
@@ -869,8 +869,8 @@ static void fastboot_parse_cmd(char *cmdbuf)
 
   // upload mmc contents to fastboot client
     } else if (strncmp(cmdbuf, "upload", 6) == 0) {
+
       mmc_source = 0; // offset into mmc flash memory
-      ram_dest = (unsigned char *) CONFIG_LOADADDR; // where in ram to copy
 
       // assuming that mmc device has already been initialized
       // which should be the case if fastboot_mmc_device is the boot device
@@ -887,40 +887,45 @@ static void fastboot_parse_cmd(char *cmdbuf)
       // CONFIG_LOADADDR is where the kernel is loaded into SDRAM (0x70800000)
       ram_free = CONFIG_SYS_SDRAM_SIZE - (CONFIG_LOADADDR - CONFIG_SYS_SDRAM_BASE) - 1024 * 1024; // TODO skipping the last megabyte for now
         
-      uploaded = 0;
-
-      // this is all we can fit into ram
-      upload_size = MIN(mmc->capacity, ram_free);
-
-      strcpy(ram_dest, "ATAD");
-      data_len_ptr = ram_dest + 4; // where the length will be copied
-      ram_dest += 4 + 33; // reserve space for command and length
-      uploaded += 4 + 33;
-
-      len = 0;
+      upload_size = mmc->capacity;
 
       while(upload_size > 0) {
-        pktsize = MIN(upload_size, CONFIG_MMC_MAX_TRANSFER_SIZE);
 
-        printf("read %d bytes to 0x%x from 0x%x\n", pktsize, ram_dest, (unsigned int) mmc_source);
-        //        DBG("read %d bytes to 0x%x from 0x%x\n", pktsize, reply_buf+len, (unsigned int) );
+        uploaded = 0;
 
-        if(mmc_read(fastboot_mmc_device, mmc_source, ram_dest, pktsize)) {
-          fastboot_send_reply("FAILFlash read fail!");
-          goto out;
+        ram_dest = (unsigned char *) CONFIG_LOADADDR; // where in ram to copy
+
+        // this is all we can fit into ram
+        upload_chunk_size = MIN(upload_size, ram_free);
+
+        if(upload_size == mmc->capacity) { // at the beginning only do
+          strcpy(ram_dest, "ATAD");
+          num_to_hex(32, mmc->capacity, ram_dest + 4); // add the data length (with a null terminator)
+          ram_dest += 4 + 33; // move pointer psat command+length header
+          uploaded += 4 + 33;
         }
 
-        mmc_source += pktsize;
-        ram_dest += pktsize;
-        upload_size -= pktsize;
-        uploaded += pktsize;
+        while(upload_chunk_size > 0) {
+          pktsize = MIN(upload_chunk_size, CONFIG_MMC_MAX_TRANSFER_SIZE);
 
+          //          printf("read %d bytes to 0x%x from 0x%x\n", pktsize, ram_dest, (unsigned int) mmc_source);
+          //        DBG("read %d bytes to 0x%x from 0x%x\n", pktsize, reply_buf+len, (unsigned int) );
+
+          if(mmc_read(fastboot_mmc_device, mmc_source, ram_dest, pktsize)) {
+            fastboot_send_reply("FAILFlash read fail!");
+            goto out;
+          }
+
+          mmc_source += pktsize;
+          ram_dest += pktsize;
+          upload_chunk_size -= pktsize;
+          uploaded += pktsize;
+        }
+
+        printf("sending %u bytes to client\n", uploaded);
+        fastboot_send_reply_actual((unsigned char *) CONFIG_LOADADDR, uploaded);
+        upload_size -= uploaded;
       }
-
-      // add the data length (with a null terminator)
-      num_to_hex(32, uploaded - 4 - 33, data_len_ptr);
-
-      fastboot_send_reply_actual((unsigned char *) CONFIG_LOADADDR, uploaded);
 
       goto out;
 
