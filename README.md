@@ -14,12 +14,7 @@ sudo apt install build-essential gcc-4.8-arm-linux-gnueabihf
 To compile:
 
 ```
-export TYPE=prod # see u-boot-2009.08/board/imx50_yoshi/config.mk
-export ARCH=arm
-export CROSS_COMPILE=arm-linux-gnueabihf- # change this if you want to use a different cross-compiler
-
-make imx50_yoshi_config
-make all
+./build.sh
 ```
 
 The output file you want will be called `u-boot.bin`.
@@ -29,9 +24,7 @@ The output file you want will be called `u-boot.bin`.
 If you change anything, before recompiling do:
 
 ```
-make clean
-make distclean
-rm -rf u-boot.*
+./rebuild.sh
 ```
 
 # Precompiled binary
