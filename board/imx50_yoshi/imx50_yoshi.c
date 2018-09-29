@@ -157,9 +157,10 @@ inline int is_soc_rev(int rev)
 
 int setup_board_info(void)
 {
-    idme_check_update();
+
 
 #if defined(CONFIG_CMD_IDME)
+    idme_check_update();
     if (idme_get_var("pcbsn", (char *) board_id, sizeof(board_id))) 
 #endif
     {

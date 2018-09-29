@@ -24,6 +24,8 @@
 
 #include <asm/arch/mx50.h>
 
+#define CONFIG_MD5
+
  /* High Level Configuration Options */
 #define CONFIG_ARMV7		1	/* This is armv7 Cortex-A8 CPU core */
 #define CONFIG_MXC
@@ -157,7 +159,7 @@
 /* Lab 126 cmds */
 //#define CONFIG_CMD_BIST		1
 //#define CONFIG_CMD_PMIC		1
-#define CONFIG_CMD_IDME		1
+//#define CONFIG_CMD_IDME		1
 //#define CONFIG_CMD_HALT		1
 
 #define CONFIG_IDME_UPDATE		1
@@ -221,8 +223,8 @@
 
 //#define CONFIG_LOGBUFFER
 
-#define CONFIG_POST         (CONFIG_SYS_POST_MEMORY | \
-                             CONFIG_SYS_POST_FAIL)
+#define CONFIG_POST         (CONFIG_SYS_POST_MEMORY | CONFIG_SYS_POST_FAIL)
+  //                             CONFIG_SYS_POST_FAIL | CONFIG_SYS_POST_MMC_CRC32)
 
 #undef	CONFIG_SYS_CLKS_IN_HZ		/* everything, incl board info, in Hz */
 
@@ -267,3 +269,5 @@
 #endif
 
 #endif				/* __CONFIG_H */
+
+

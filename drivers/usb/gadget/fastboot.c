@@ -30,6 +30,8 @@
 #include <mmc.h>
 #include <usb/fastboot.h>
 
+#include <u-boot/md5.h>
+
 #if defined (CONFIG_CMD_IDME)
 #include <idme.h>
 #endif
@@ -641,7 +643,7 @@ extern const u8 *get_board_id16(void);
 extern void board_reset(void);
 extern void board_power_off(void);
 extern unsigned int get_dram_size(void);
-/*extern int mmc_crc32_test (uint part, uint start, int size, uint crc);*/
+//extern int mmc_crc32_test (uint part, uint start, int size, uint crc);
 extern int do_pass (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[]);
 extern int do_fail (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[]);
 
@@ -662,7 +664,22 @@ void requeue_command_buffer(struct usb_endpoint_instance *endpoint) {
     udc_endpoint_read(endpoint);
 }
 
+// TODO split into init, update and finalize
+/*
+uint32_t adler32(const void *buf, size_t buflength) {
+     const uint8_t* buffer = (const uint8_t*) buf;
 
+     uint32_t s1 = 1;
+     uint32_t s2 = 0;
+     size_t n;
+
+     for(n = 0; n < buflength; n++) {
+        s1 = (s1 + buffer[n]) % 65521;
+        s2 = (s2 + s1) % 65521;
+     }     
+     return (s2 << 16) | s1;
+}
+*/
 /*
  * Parse a fastboot cmd.  cmdbuf must be NULL-terminated
  */
@@ -799,68 +816,67 @@ static void fastboot_parse_cmd(char *cmdbuf)
       fastboot_send_reply_actual(reply_buf, count);
 
       goto out;
-    }
-    else if (strncmp(cmdbuf, "download", 8) == 0) {
-	/* Write data to memory which will be later used
-	   by "boot", "ramdisk", "flash", etc.  The client
-	   will reply with "DATA%08x" if it has enough 
-	   space in RAM or "FAIL" if not.  The size of
-	   the download is remembered. */
+    } else if (strncmp(cmdbuf, "download", 8) == 0) {
+      /* Write data to memory which will be later used
+         by "boot", "ramdisk", "flash", etc.  The client
+         will reply with "DATA%08x" if it has enough 
+         space in RAM or "FAIL" if not.  The size of
+         the download is remembered. */
+      
+      unsigned int bytes_rcvd;
+      unsigned int rx_addr;
 
-	unsigned int bytes_rcvd;
-	unsigned int rx_addr;
+      rx_length = hex2unsigned(cmdbuf + 9);
 
-        rx_length = hex2unsigned(cmdbuf + 9);
+      /* tell the host our max size if the download is too large */
+      if (rx_length > CONFIG_FASTBOOT_MAX_DOWNLOAD_LEN) {
+        printf("capping download at 0x%x\n", CONFIG_FASTBOOT_MAX_DOWNLOAD_LEN);
+        rx_length = CONFIG_FASTBOOT_MAX_DOWNLOAD_LEN;
+      }
+      kernel_size = rx_length;
+      rx_addr = kernel_addr;
 
-	/* tell the host our max size if the download is too large */
-        if (rx_length > CONFIG_FASTBOOT_MAX_DOWNLOAD_LEN) {
-	    printf("capping download at 0x%x\n", CONFIG_FASTBOOT_MAX_DOWNLOAD_LEN);
-	    rx_length = CONFIG_FASTBOOT_MAX_DOWNLOAD_LEN;
-        }
-        kernel_size = rx_length;
-        rx_addr = kernel_addr;
-
-	DBG("recv data addr=%x size=%x\n", rx_addr, rx_length); 
+      DBG("recv data addr=%x size=%x\n", rx_addr, rx_length); 
         
-	strcpy(reply_buf,"DATA");
-  num_to_hex(8, rx_length, reply_buf + 4);
-	reply_buf[12] = 0;
+      strcpy(reply_buf,"DATA");
+      num_to_hex(8, rx_length, reply_buf + 4);
+      reply_buf[12] = 0;
 
-        fastboot_send_reply(reply_buf);
+      fastboot_send_reply(reply_buf);
 
-	bytes_rcvd = 0;
+      bytes_rcvd = 0;
 
-	printf("downloading\n");
-	while (rx_length > bytes_rcvd) {
-	    // queue data buffer
-	    endpoint->rcv_urb->buffer = (u8 *) rx_addr;
-	    endpoint->rcv_urb->buffer_length = MIN((rx_length - bytes_rcvd), FASTBOOT_RX_MAX);
-	    endpoint->rcv_urb->status = 0;
-	    endpoint->rcv_urb->actual_length = 0;
-	    udc_endpoint_read(endpoint);
+      printf("downloading\n");
+      while (rx_length > bytes_rcvd) {
+        // queue data buffer
+        endpoint->rcv_urb->buffer = (u8 *) rx_addr;
+        endpoint->rcv_urb->buffer_length = MIN((rx_length - bytes_rcvd), FASTBOOT_RX_MAX);
+        endpoint->rcv_urb->status = 0;
+        endpoint->rcv_urb->actual_length = 0;
+        udc_endpoint_read(endpoint);
 
-	    while (!endpoint->rcv_urb->actual_length && !endpoint->rcv_urb->status) {
-		udc_irq();
-	    }
+        while (!endpoint->rcv_urb->actual_length && !endpoint->rcv_urb->status) {
+          udc_irq();
+        }
 
-	    bytes_rcvd += endpoint->rcv_urb->actual_length;
-	    rx_addr += endpoint->rcv_urb->actual_length;
+        bytes_rcvd += endpoint->rcv_urb->actual_length;
+        rx_addr += endpoint->rcv_urb->actual_length;
 
-	    //DBG(" rcvd: %d bytes.  %d of %d\n", endpoint->rcv_urb->actual_length, bytes_rcvd, rx_length);
+        //DBG(" rcvd: %d bytes.  %d of %d\n", endpoint->rcv_urb->actual_length, bytes_rcvd, rx_length);
 
-	    if (!(bytes_rcvd % 0x2000000))
-		printf(".");
+        if (!(bytes_rcvd % 0x2000000))
+          printf(".");
 	    
-	    if (endpoint->rcv_urb->status) {
-		ERR("DATA receive failure: %d\n", endpoint->rcv_urb->status);
-		fastboot_send_reply("FAILdownload failure");
-		goto out;
-	    }
-	}
+        if (endpoint->rcv_urb->status) {
+          ERR("DATA receive failure: %d\n", endpoint->rcv_urb->status);
+          fastboot_send_reply("FAILdownload failure");
+          goto out;
+        }
+      }
 
-	printf("done\n");
-	
-	fastboot_send_reply("OKAY");    
+      printf("done\n");
+      
+      fastboot_send_reply("OKAY");    
     } else if (strncmp(cmdbuf, "verify", 6) == 0) {
         /* Send a digital signature to verify the downloaded
 	   data.  Required if the bootloader is "secure"
@@ -924,6 +940,7 @@ static void fastboot_parse_cmd(char *cmdbuf)
 
         printf("sending %u bytes to client\n", uploaded);
         fastboot_send_reply_actual((unsigned char *) CONFIG_LOADADDR, uploaded);
+
         upload_size -= uploaded;
       }
 
@@ -1148,10 +1165,11 @@ static void fastboot_parse_cmd(char *cmdbuf)
 
 	fastboot_send_reply("OKAY");
     }
+    /*
     else if (strncmp(cmdbuf, "check", 5) == 0) {
         uint start, size, crc;
 
-        /* Find the indicated partition */
+        // Find the indicated partition 
         flash_addr = fastboot_find_partition(cmdbuf + 6, &part_size, &part_index, &mmc_partition);
 
         if (flash_addr == INVALID_PARTITION) {
@@ -1169,14 +1187,26 @@ static void fastboot_parse_cmd(char *cmdbuf)
         src = (unsigned char *) strtok(NULL, " \0"); // get crc
         crc = (uint)simple_strtoul((char *)src, NULL, 16);
 
-        /*if (mmc_crc32_test(part_index, start, size, crc)) {
+        if (mmc_crc32_test(part_index, start, size, crc)) {
             fastboot_send_reply("FAILcrc failure");
             goto out;
-        }*/
+        }
 
         fastboot_send_reply("OKAY");
     }
+    */
     else if (strncmp(cmdbuf, "boot", 4) == 0) {
+      /*
+        TODO remove
+      */
+      struct MD5Context foo;
+      unsigned char bar;
+      unsigned char baz[16];
+      MD5Init(&foo);
+      MD5Update(&foo, &bar, 1);
+      MD5Final(baz, &foo);
+      
+
 	/* The previously downloaded data is a boot.img
 	   and should be booted according to the normal
 	   procedure for a boot.img */

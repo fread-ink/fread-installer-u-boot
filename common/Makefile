@@ -145,8 +145,8 @@ COBJS-$(CONFIG_CMD_SPIBOOTLDR) += cmd_spibootldr.o
 COBJS-$(CONFIG_CMD_STRINGS) += cmd_strings.o
 COBJS-$(CONFIG_CMD_TERMINAL) += cmd_terminal.o
 COBJS-$(CONFIG_CMD_TSI148) += cmd_tsi148.o
-COBJS-$(CONFIG_CMD_UBI) += cmd_ubi.o
-COBJS-$(CONFIG_CMD_UBIFS) += cmd_ubifs.o
+#COBJS-$(CONFIG_CMD_UBI) += cmd_ubi.o
+#COBJS-$(CONFIG_CMD_UBIFS) += cmd_ubifs.o
 COBJS-$(CONFIG_CMD_UNIVERSE) += cmd_universe.o
 ifdef CONFIG_CMD_USB
 COBJS-y += cmd_usb.o
@@ -154,7 +154,7 @@ COBJS-y += usb.o
 COBJS-$(CONFIG_USB_STORAGE) += usb_storage.o
 endif
 COBJS-$(CONFIG_CMD_XIMG) += cmd_ximg.o
-COBJS-$(CONFIG_YAFFS2) += cmd_yaffs2.o
+#COBJS-$(CONFIG_YAFFS2) += cmd_yaffs2.o
 COBJS-$(CONFIG_VFD) += cmd_vfd.o
 
 # others
