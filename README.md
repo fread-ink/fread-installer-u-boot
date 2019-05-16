@@ -5,10 +5,32 @@ This is based on a partial fastboot patch [provided by Eureka on the mobileread 
 
 # Compiling
 
-Make sure you have the appropriate compiler and tools installed:
+Make sure you have the appropriate compiler and tools installed. You will need a GCC 4.8 or 4.9 ARM hard-float compiler. Earlier may work but are untested. Newer compilers won't compile and even if you fix the few compile bugs then the resulting binary will be too large (exceeding the 72 kB of on-chip ram).
+
+If you are on an older Debian/Ubuntu system you might be able to install from apt:
 
 ```
 sudo apt install build-essential gcc-4.8-arm-linux-gnueabihf 
+```
+
+Otherwise you can get a Linaro 4.9 toolchain:
+
+```
+mkdir ~/linaro
+cd ~/linaro/
+
+wget https://releases.linaro.org/components/toolchain/binaries/latest-4/arm-linux-gnueabihf/gcc-linaro-4.9.4-2017.01-x86_64_arm-linux-gnueabihf.tar.xz
+
+tar xvJf gcc-linaro-4.9.4-2017.01-x86_64_arm-linux-gnueabihf.tar.xz
+rm gcc-linaro-4.9.4-2017.01-x86_64_arm-linux-gnueabihf.tar.xz
+```
+
+If the above download URL doesn't work then I put a mirror [here](http://fread.ink/linaro/).
+
+If you use the Linaro toolchain then before compiling you will have to do:
+
+```
+export PATH="~/linaro/gcc-linaro-4.9.4-2017.01-x86_64_arm-linux-gnueabihf/bin:$PATH"
 ```
 
 To compile:
