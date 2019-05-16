@@ -643,7 +643,7 @@ extern const u8 *get_board_id16(void);
 extern void board_reset(void);
 extern void board_power_off(void);
 extern unsigned int get_dram_size(void);
-//extern int mmc_crc32_test (uint part, uint start, int size, uint crc);
+
 extern int do_pass (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[]);
 extern int do_fail (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[]);
 
@@ -700,6 +700,7 @@ static void fastboot_parse_cmd(char *cmdbuf)
     unsigned int mmc_source;
     unsigned char* ram_dest;
     unsigned int count;
+    uint32_t crc_cac = ~0U;
     int i;
     int ret;
 #ifdef CONFIG_GENERIC_MMC
@@ -908,7 +909,8 @@ static void fastboot_parse_cmd(char *cmdbuf)
 
       strcpy(ram_dest, "ATAD");
       num_to_hex(32, mmc->capacity, ram_dest + 4); // add the data length (with a null terminator)
-      fastboot_send_reply_actual(ram_dest, 4 + 34);
+      
+      fastboot_send_reply_actual(ram_dest, 4 + 34); // TODO why not 4 + 33? where does the last byte come from?
 
       upload_size = mmc->capacity;
 
@@ -932,6 +934,8 @@ static void fastboot_parse_cmd(char *cmdbuf)
             goto out;
           }
 
+          crc_cac = crc32(crc_cac, (unsigned char*) ram_dest, pktsize);
+          
           mmc_source += pktsize;
           ram_dest += pktsize;
           upload_chunk_size -= pktsize;
@@ -943,6 +947,12 @@ static void fastboot_parse_cmd(char *cmdbuf)
 
         upload_size -= uploaded;
       }
+
+      crc_cac=~crc_cac; // invert it at the end
+      num_to_hex(32, crc_cac, (unsigned char *) CONFIG_LOADADDR); // add the data length (with a null terminator)
+      
+      // send CRC32 as ascii hex (8 chars)
+      fastboot_send_reply_actual((unsigned char *) CONFIG_LOADADDR, 8);
 
       goto out;
 
@@ -1163,39 +1173,9 @@ static void fastboot_parse_cmd(char *cmdbuf)
 	}
 #endif
 
-	fastboot_send_reply("OKAY");
-    }
-    /*
-    else if (strncmp(cmdbuf, "check", 5) == 0) {
-        uint start, size, crc;
-
-        // Find the indicated partition 
-        flash_addr = fastboot_find_partition(cmdbuf + 6, &part_size, &part_index, &mmc_partition);
-
-        if (flash_addr == INVALID_PARTITION) {
-            fastboot_send_reply("FAILInvalid partition");
-            goto out;
-        }
-
-        src = (unsigned char *) strtok(cmdbuf + 6, " \0"); // skip partition
-        src = (unsigned char *) strtok(NULL, " \0"); // get starting address
-        start = (uint)simple_strtoul((char *)src, NULL, 16);
-
-        src = (unsigned char *) strtok(NULL, " \0"); // get size
-        size = (uint)simple_strtoul((char *)src, NULL, 16);
-
-        src = (unsigned char *) strtok(NULL, " \0"); // get crc
-        crc = (uint)simple_strtoul((char *)src, NULL, 16);
-
-        if (mmc_crc32_test(part_index, start, size, crc)) {
-            fastboot_send_reply("FAILcrc failure");
-            goto out;
-        }
-
-        fastboot_send_reply("OKAY");
-    }
-    */
-    else if (strncmp(cmdbuf, "boot", 4) == 0) {
+  fastboot_send_reply("OKAY");
+  
+    } else if (strncmp(cmdbuf, "boot", 4) == 0) {
       /*
         TODO remove
       */

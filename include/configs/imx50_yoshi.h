@@ -122,6 +122,7 @@
 #define CONFIG_BOOT_FROM_PARTITION	1
 
 #define CONFIG_MMC_MAX_TRANSFER_SIZE    (0xFFFF * 512)
+
 /*
  * USB Configs
  */
@@ -224,7 +225,10 @@
 //#define CONFIG_LOGBUFFER
 
 #define CONFIG_POST         (CONFIG_SYS_POST_MEMORY | CONFIG_SYS_POST_FAIL)
-  //                             CONFIG_SYS_POST_FAIL | CONFIG_SYS_POST_MMC_CRC32)
+//                             CONFIG_SYS_POST_FAIL | CONFIG_SYS_POST_MMC_CRC32)
+
+#define DYNAMIC_CRC_TABLE 1
+
 
 #undef	CONFIG_SYS_CLKS_IN_HZ		/* everything, incl board info, in Hz */
 
