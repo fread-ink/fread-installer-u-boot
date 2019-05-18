@@ -32,10 +32,6 @@
 
 #include <u-boot/md5.h>
 
-#if defined (CONFIG_CMD_IDME)
-#include <idme.h>
-#endif
-
 #define ERR(fmt, args...)                               \
 	serial_printf("ERROR : [%s] %s:%d: "fmt,              \
                 __FILE__,__FUNCTION__,__LINE__, ##args)
@@ -737,47 +733,10 @@ static void fastboot_parse_cmd(char *cmdbuf)
 	    sprintf(reply_buf, "OKAY%s", serial_number);
 	    fastboot_send_reply(reply_buf);
     }
-    else if (strncmp(cmdbuf, "secure", 6) == 0) {
-	    /* If the value is "yes", this is a secure
-	       bootloader requiring a signature before
-	       it will install or boot images. */
+    else {
 	    fastboot_send_reply("OKAYno");
     }
-    else {
-
-	    memcpy(reply_buf, "OKAY", 4);
-	    reply_buf[4] = 0;
-
-#if defined (CONFIG_CMD_IDME)
-	    idme_get_var(cmdbuf, reply_buf + 4, REPLY_BUF_LEN - 5);
-#endif
-
-	    fastboot_send_reply(reply_buf);
-    }
-  }
-  else if (strncmp(cmdbuf, "setvar", 6) == 0) {
-    /* Set a config variable in the bootloader. */
-
-    // get the variable name
-    cmdbuf += 7;
-
-    memcpy(reply_buf, "OKAY", 4);
-    reply_buf[4] = 0;
-
-    src = (unsigned char *) strtok(cmdbuf, " \0"); // skip name
-    src = (unsigned char *) strtok(NULL, " \0"); // get new value
-
-#if defined (CONFIG_CMD_IDME)
-    if(idme_update_var(cmdbuf, (char *)src)) {
-      fastboot_send_reply("FAILupdate error");
-      goto out;
-    }
-#endif
-
-    fastboot_send_reply(reply_buf);
-
-  }
-  else if (strncmp(cmdbuf, "partlist", 8) == 0) {
+  } else if (strncmp(cmdbuf, "partlist", 8) == 0) {
 
     memcpy(reply_buf, "DISP", 4);
     count = 4;
