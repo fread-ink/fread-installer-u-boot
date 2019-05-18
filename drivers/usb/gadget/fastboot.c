@@ -736,46 +736,6 @@ static void fastboot_parse_cmd(char *cmdbuf)
     else {
 	    fastboot_send_reply("OKAYno");
     }
-  } else if (strncmp(cmdbuf, "partlist", 8) == 0) {
-
-    memcpy(reply_buf, "DISP", 4);
-    count = 4;
-
-    ret = sprintf(reply_buf+count, "%-20s %13s %13s %13s\n\n", "partition", "start_address", "size", "end_address");
-    count += ret;
-
-    mmc = find_mmc_device(fastboot_mmc_device);
-    if(mmc == NULL) {
-      fastboot_send_reply("FAILCouldn't find flash device");
-      goto out;
-    }
-
-    for (i = 0; i < CONFIG_NUM_PARTITIONS; i++) { 
-
-      ret = sprintf(reply_buf+count, "%-20s", partition_info[i].name);
-      count += ret;
-        
-      ret = sprintf(reply_buf+count, "    0x%08x", partition_info[i].address);
-      count += ret;
-
-      part_size = partition_info[i].size;
-
-      if(part_size == PARTITION_FILL_SPACE) {
-        part_size = mmc->capacity - partition_info[i].address;
-      }
-
-      ret = sprintf(reply_buf+count, "    0x%08x", part_size);
-      count += ret;
-
-      ret = sprintf(reply_buf+count, "    0x%08x\n", partition_info[i].address + part_size);
-      count += ret;
-    }
-      
-    reply_buf[count] = 0;
-    count += 1;
-    fastboot_send_reply_actual(reply_buf, count);
-
-    goto out;
   } else if (strncmp(cmdbuf, "download", 8) == 0) {
     /* Write data to memory which will be later used
        by "boot", "ramdisk", "flash", etc.  The client
