@@ -801,6 +801,8 @@ static void fastboot_parse_cmd(char *cmdbuf)
     // upload mmc contents to fastboot client
   } else if (strncmp(cmdbuf, "upload", 6) == 0) {
 
+    printf("Upload command received\n");
+    
     mmc_source = 0; // offset into mmc flash memory
 
     // assuming that mmc device has already been initialized
@@ -812,7 +814,7 @@ static void fastboot_parse_cmd(char *cmdbuf)
       fastboot_send_reply("FAILCouldn't find flash device");
       goto out;
     }
-
+    
     // calculate how much free SDRAM we have
     // CONFIG_SYS_SDRAM_BASE is where the SDRAM is memory-mapped (0x70000000)
     // CONFIG_LOADADDR is where the kernel is loaded into SDRAM (0x70800000)
@@ -828,8 +830,10 @@ static void fastboot_parse_cmd(char *cmdbuf)
       
     upload_size = mmc->capacity;
 
+    printf("Starting upload of %llu bytes\n", mmc->capacity);
+    
     while(upload_size > 0) {
-
+      
       uploaded = 0;
 
       ram_dest = (unsigned char *) CONFIG_LOADADDR; // where in ram to copy
@@ -837,31 +841,31 @@ static void fastboot_parse_cmd(char *cmdbuf)
       // this is all we can fit into ram
       upload_chunk_size = MIN(upload_size, ram_free);
 
+      printf("Reading %u byte chunk from flash memory into ram\n", upload_chunk_size);
+      
       while(upload_chunk_size > 0) {
-        pktsize = MIN(upload_chunk_size, CONFIG_MMC_MAX_TRANSFER_SIZE);
 
-        //          printf("read %d bytes to 0x%x from 0x%x\n", pktsize, ram_dest, (unsigned int) mmc_source);
-        //        DBG("read %d bytes to 0x%x from 0x%x\n", pktsize, reply_buf+len, (unsigned int) );
+        pktsize = MIN(upload_chunk_size, CONFIG_MMC_MAX_TRANSFER_SIZE);
 
         if(mmc_read(fastboot_mmc_device, mmc_source, ram_dest, pktsize)) {
           fastboot_send_reply("FAILFlash read fail!");
           goto out;
         }
 
+        printf("Computing CRC32 of previous chunk\n");
         crc_cac = crc32(crc_cac, (unsigned char*) ram_dest, pktsize);
-          
         mmc_source += pktsize;
         ram_dest += pktsize;
         upload_chunk_size -= pktsize;
         uploaded += pktsize;
       }
 
-      printf("sending %u bytes to client\n", uploaded);
+      printf("Sending %u bytes to client\n", uploaded);
       fastboot_send_reply_actual((unsigned char *) CONFIG_LOADADDR, uploaded);
 
       upload_size -= uploaded;
     }
-
+    
     crc_cac=~crc_cac; // invert it at the end
     //      num_to_hex(32, crc_cac, (unsigned char *) CONFIG_LOADADDR); // add the data length (with a null terminator)
       
