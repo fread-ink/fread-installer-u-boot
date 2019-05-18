@@ -160,38 +160,38 @@ int setup_board_info(void)
 
 
 #if defined(CONFIG_CMD_IDME)
-    idme_check_update();
-    if (idme_get_var("pcbsn", (char *) board_id, sizeof(board_id))) 
+  idme_check_update();
+  if (idme_get_var("pcbsn", (char *) board_id, sizeof(board_id))) 
 #endif
     {
-	/* not found: clean up garbage characters. */
-	memset(board_id, 0, sizeof(board_id));
+      /* not found: clean up garbage characters. */
+      memset(board_id, 0, sizeof(board_id));
     }
 
 #if defined(CONFIG_CMD_IDME)
-    if (idme_get_var("serial", (char *) serial_number, sizeof(serial_number))) 
+  if (idme_get_var("serial", (char *) serial_number, sizeof(serial_number))) 
 #endif
     {
-	/* not found: clean up garbage characters. */
-	memset(serial_number, 0, sizeof(serial_number));
+      /* not found: clean up garbage characters. */
+      memset(serial_number, 0, sizeof(serial_number));
     }
 
-    return 0;
+  return 0;
 }
 
 int board_info_valid (u8 *info, int len)
 {
-    int i;
+  int i;
 
-    for (i = 0; i < len; i++) {
-	if ((info[i] < '0') && 
-	    (info[i] > '9') &&
-	    (info[i] < 'A') &&
-	    (info[i] > 'Z'))
+  for (i = 0; i < len; i++) {
+    if ((info[i] < '0') && 
+        (info[i] > '9') &&
+        (info[i] < 'A') &&
+        (info[i] > 'Z'))
 	    return 0;
-    }
+  }
 
-    return 1;
+  return 1;
 }
 
 /*************************************************************************
@@ -200,10 +200,10 @@ int board_info_valid (u8 *info, int len)
  *************************************************************************/
 const u8 *get_board_serial(void)
 {
-    if (!board_info_valid(serial_number, CONFIG_DSN_LEN))
-	return (u8 *) "0000000000000000";
-    else
-	return serial_number;
+  if (!board_info_valid(serial_number, CONFIG_DSN_LEN))
+    return (u8 *) "0000000000000000";
+  else
+    return serial_number;
 }
 
 /*************************************************************************
@@ -212,10 +212,10 @@ const u8 *get_board_serial(void)
  *************************************************************************/
 const u8 *get_board_id16(void)
 {
-    if (!board_info_valid(board_id, CONFIG_PCBA_LEN))
-	return (u8 *) "0000000000000000";
-    else
-	return board_id;
+  if (!board_info_valid(board_id, CONFIG_PCBA_LEN))
+    return (u8 *) "0000000000000000";
+  else
+    return board_id;
 }
 
 
@@ -226,53 +226,53 @@ void board_mmu_init(void)
 	unsigned long i;
 
 	/*
-	* Set the TTB register
-	*/
+   * Set the TTB register
+   */
 	asm volatile ("mcr  p15,0,%0,c2,c0,0" : : "r"(ttb_base) /*:*/);
 
 	/*
-	* Set the Domain Access Control Register
-	*/
+   * Set the Domain Access Control Register
+   */
 	i = ARM_ACCESS_DACR_DEFAULT;
 	asm volatile ("mcr  p15,0,%0,c3,c0,0" : : "r"(i) /*:*/);
 
 	/*
-	* First clear all TT entries - ie Set them to Faulting
-	*/
+   * First clear all TT entries - ie Set them to Faulting
+   */
 	memset((void *)ttb_base, 0, ARM_FIRST_LEVEL_PAGE_TABLE_SIZE);
 	/* Actual   Virtual  Size   Attributes          Function */
 	/* Base     Base     MB     cached? buffered?  access permissions */
 	/* xxx00000 xxx00000 */
 	X_ARM_MMU_SECTION(0x000, 0x000, 0x10,
-			ARM_UNCACHEABLE, ARM_UNBUFFERABLE,
-			ARM_ACCESS_PERM_RW_RW); /* ROM, 16M */
+                    ARM_UNCACHEABLE, ARM_UNBUFFERABLE,
+                    ARM_ACCESS_PERM_RW_RW); /* ROM, 16M */
 	X_ARM_MMU_SECTION(0x070, 0x070, 0x010,
-			ARM_UNCACHEABLE, ARM_UNBUFFERABLE,
-			ARM_ACCESS_PERM_RW_RW); /* IRAM */
+                    ARM_UNCACHEABLE, ARM_UNBUFFERABLE,
+                    ARM_ACCESS_PERM_RW_RW); /* IRAM */
 	X_ARM_MMU_SECTION(0x100, 0x100, 0x040,
-			ARM_UNCACHEABLE, ARM_UNBUFFERABLE,
-			ARM_ACCESS_PERM_RW_RW); /* SATA */
+                    ARM_UNCACHEABLE, ARM_UNBUFFERABLE,
+                    ARM_ACCESS_PERM_RW_RW); /* SATA */
 	X_ARM_MMU_SECTION(0x180, 0x180, 0x100,
-			ARM_UNCACHEABLE, ARM_UNBUFFERABLE,
-			ARM_ACCESS_PERM_RW_RW); /* IPUv3M */
+                    ARM_UNCACHEABLE, ARM_UNBUFFERABLE,
+                    ARM_ACCESS_PERM_RW_RW); /* IPUv3M */
 	X_ARM_MMU_SECTION(0x200, 0x200, 0x200,
-			ARM_UNCACHEABLE, ARM_UNBUFFERABLE,
-			ARM_ACCESS_PERM_RW_RW); /* GPU */
+                    ARM_UNCACHEABLE, ARM_UNBUFFERABLE,
+                    ARM_ACCESS_PERM_RW_RW); /* GPU */
 	X_ARM_MMU_SECTION(0x400, 0x400, 0x300,
-			ARM_UNCACHEABLE, ARM_UNBUFFERABLE,
-			ARM_ACCESS_PERM_RW_RW); /* periperals */
+                    ARM_UNCACHEABLE, ARM_UNBUFFERABLE,
+                    ARM_ACCESS_PERM_RW_RW); /* periperals */
 	X_ARM_MMU_SECTION(0x700, 0x700, 0x400,
-			ARM_CACHEABLE, ARM_BUFFERABLE,
-			ARM_ACCESS_PERM_RW_RW); /* CSD0 1G */
+                    ARM_CACHEABLE, ARM_BUFFERABLE,
+                    ARM_ACCESS_PERM_RW_RW); /* CSD0 1G */
 	X_ARM_MMU_SECTION(0x700, 0xB00, 0x400,
-			ARM_UNCACHEABLE, ARM_UNBUFFERABLE,
-			ARM_ACCESS_PERM_RW_RW); /* CSD0 1G */
+                    ARM_UNCACHEABLE, ARM_UNBUFFERABLE,
+                    ARM_ACCESS_PERM_RW_RW); /* CSD0 1G */
 	X_ARM_MMU_SECTION(0xF00, 0xF00, 0x100,
-			ARM_UNCACHEABLE, ARM_UNBUFFERABLE,
-			ARM_ACCESS_PERM_RW_RW); /* CS1 EIM control*/
+                    ARM_UNCACHEABLE, ARM_UNBUFFERABLE,
+                    ARM_ACCESS_PERM_RW_RW); /* CS1 EIM control*/
 	X_ARM_MMU_SECTION(0xF80, 0xF80, 0x001,
-			ARM_UNCACHEABLE, ARM_UNBUFFERABLE,
-			ARM_ACCESS_PERM_RW_RW); /* iRam */
+                    ARM_UNCACHEABLE, ARM_UNBUFFERABLE,
+                    ARM_ACCESS_PERM_RW_RW); /* iRam */
 
 	/* Workaround for arm errata #709718 */
 	/* Setup PRRR so device is always mapped to non-shared */
@@ -287,19 +287,19 @@ void board_mmu_init(void)
 
 static const struct board_type *get_board_type(void) 
 {
-    int i;
+  int i;
 
-    if (!board_info_valid(board_id, CONFIG_PCBA_LEN)) {
-	return NULL;
-    }
-
-    for (i = 0; i < NUM_KNOWN_BOARDS; i++) {
-	if (strncmp((const char *) board_id, boards[i].id, strlen(boards[i].id)) == 0) {
-	    return &(boards[i]);
-	}
-    }
-
+  if (!board_info_valid(board_id, CONFIG_PCBA_LEN)) {
     return NULL;
+  }
+
+  for (i = 0; i < NUM_KNOWN_BOARDS; i++) {
+    if (strncmp((const char *) board_id, boards[i].id, strlen(boards[i].id)) == 0) {
+	    return &(boards[i]);
+    }
+  }
+
+  return NULL;
 }
 
 #ifdef CONFIG_FOR_FACTORY
@@ -314,69 +314,69 @@ extern void lpddr2_init(int cs);
 
 unsigned int get_dram_size(void) 
 {
-    int i;
-    unsigned int size = 0;
+  int i;
+  unsigned int size = 0;
 
-    for (i=0; i<CONFIG_NR_DRAM_BANKS; i++) {
-	size += gd->bd->bi_dram[i].size;
-    }
+  for (i=0; i<CONFIG_NR_DRAM_BANKS; i++) {
+    size += gd->bd->bi_dram[i].size;
+  }
 
-    return size;
+  return size;
 }
 
 int dram_init(void)
 {
-    const struct board_type *board;
+  const struct board_type *board;
 
-    gd->bd->bi_dram[0].start = PHYS_SDRAM_1;
+  gd->bd->bi_dram[0].start = PHYS_SDRAM_1;
 
-    while (1) {
+  while (1) {
 
-	board = get_board_type();
+    board = get_board_type();
 
-	if (board) {
+    if (board) {
 
 	    gd->bd->bi_dram[0].size = board->mem_size;
 
 	    switch (board->mem_type) {
-	      case MEMORY_TYPE_MDDR:
+      case MEMORY_TYPE_MDDR:
 #ifdef CONFIG_IRAM_BOOT
-		mddr_init();
+        mddr_init();
 #endif
-		return 0;
+        return 0;
 
-	      case MEMORY_TYPE_LPDDR2:
+      case MEMORY_TYPE_LPDDR2:
 #ifdef CONFIG_IRAM_BOOT
 		    lpddr2_init(1);
 #endif
-		return 0;
+        return 0;
 	    } 
-	}
+    }
 
 #ifdef CONFIG_FOR_FACTORY
-	/* Clear out buffer */
-	memset(boardid_input_buf, 0, sizeof(boardid_input_buf));
+    /* Clear out buffer */
+    memset(boardid_input_buf, 0, sizeof(boardid_input_buf));
 
-	printf("Board ID is invalid!  Please enter a valid board id:\n");
-	readline_into_buffer(">", boardid_input_buf);
+    printf("Board ID is invalid!  Please enter a valid board id:\n");
+    readline_into_buffer(">", boardid_input_buf);
 
-	if (strlen(boardid_input_buf) != CONFIG_PCBA_LEN) {
+    if (strlen(boardid_input_buf) != CONFIG_PCBA_LEN) {
 	    printf("\nError! Board ID must be %d chars long.\n\n", CONFIG_PCBA_LEN);
 	    continue;
-	}
-
-	idme_update_var("pcbsn", boardid_input_buf);
-
-	/* Set bootmode to diags if this is the first boot */
-	idme_update_var("bootmode", "diags");
-
-	setup_board_info();
-#else
-	printf("Invalid board id!  Can't determine system type for RAM init.. bailing!\n");
-	return 0;
-#endif /* CONFIG_FOR_FACTORY */
     }
+
+    idme_update_var("pcbsn", boardid_input_buf);
+
+    /* Set bootmode to diags if this is the first boot */
+    idme_update_var("bootmode", "diags");
+
+    setup_board_info();
+#else
+    printf("Invalid board id!  Can't determine system type for RAM init.. bailing!\n");
     return 0;
+#endif /* CONFIG_FOR_FACTORY */
+  }
+  return 0;
 }
 
 static void setup_uart(void)
@@ -384,58 +384,58 @@ static void setup_uart(void)
 
 #if defined(CONFIG_MX50_UART_DETECT)
 
-    /* Use RXD pin to detect whether there is a serial connection on UART4 */
-    mxc_request_iomux(MX50_PIN_UART4_RXD, IOMUX_CONFIG_GPIO);
-    mxc_iomux_set_pad(MX50_PIN_UART4_RXD, 
-		      PAD_CTL_DRV_HIGH | PAD_CTL_100K_PD |
-		      PAD_CTL_PUE_PULL | PAD_CTL_PKE_ENABLE);
+  /* Use RXD pin to detect whether there is a serial connection on UART4 */
+  mxc_request_iomux(MX50_PIN_UART4_RXD, IOMUX_CONFIG_GPIO);
+  mxc_iomux_set_pad(MX50_PIN_UART4_RXD, 
+                    PAD_CTL_DRV_HIGH | PAD_CTL_100K_PD |
+                    PAD_CTL_PUE_PULL | PAD_CTL_PKE_ENABLE);
 
-    mx50_gpio_direction(IOMUX_TO_GPIO(MX50_PIN_UART4_RXD), MX50_GPIO_DIRECTION_IN);
+  mx50_gpio_direction(IOMUX_TO_GPIO(MX50_PIN_UART4_RXD), MX50_GPIO_DIRECTION_IN);
 
-    if (mx50_gpio_get(IOMUX_TO_GPIO(MX50_PIN_UART4_RXD))) {
-	g_uart_addr = UART4_BASE_ADDR;
-    } else {
-	g_uart_addr = UART1_BASE_ADDR;
-    }
+  if (mx50_gpio_get(IOMUX_TO_GPIO(MX50_PIN_UART4_RXD))) {
+    g_uart_addr = UART4_BASE_ADDR;
+  } else {
+    g_uart_addr = UART1_BASE_ADDR;
+  }
 
-    mxc_free_iomux(MX50_PIN_UART4_RXD, IOMUX_CONFIG_GPIO);
+  mxc_free_iomux(MX50_PIN_UART4_RXD, IOMUX_CONFIG_GPIO);
 
 #elif defined(CONFIG_MX50_UART1)
-    g_uart_addr = UART1_BASE_ADDR;
+  g_uart_addr = UART1_BASE_ADDR;
 
 #else
 #error "define CONFIG_MX50_UARTx to use the mx50 UART driver"   
 #endif
 
-    if (g_uart_addr == UART1_BASE_ADDR) {
-	/* UART1 RXD */
-	mxc_request_iomux(MX50_PIN_UART1_RXD, IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX50_PIN_UART1_RXD, 
-			  PAD_CTL_DRV_HIGH | PAD_CTL_100K_PU |
-			  PAD_CTL_PUE_PULL | PAD_CTL_PKE_ENABLE);
-	mxc_iomux_set_input(MUX_IN_UART1_IPP_UART_RXD_MUX_SELECT_INPUT, 0x1);
+  if (g_uart_addr == UART1_BASE_ADDR) {
+    /* UART1 RXD */
+    mxc_request_iomux(MX50_PIN_UART1_RXD, IOMUX_CONFIG_ALT0);
+    mxc_iomux_set_pad(MX50_PIN_UART1_RXD, 
+                      PAD_CTL_DRV_HIGH | PAD_CTL_100K_PU |
+                      PAD_CTL_PUE_PULL | PAD_CTL_PKE_ENABLE);
+    mxc_iomux_set_input(MUX_IN_UART1_IPP_UART_RXD_MUX_SELECT_INPUT, 0x1);
 
-	/* UART1 TXD */
-	mxc_request_iomux(MX50_PIN_UART1_TXD, IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX50_PIN_UART1_TXD, 
-			  PAD_CTL_DRV_HIGH | PAD_CTL_100K_PU |
-			  PAD_CTL_PUE_PULL | PAD_CTL_PKE_ENABLE);
+    /* UART1 TXD */
+    mxc_request_iomux(MX50_PIN_UART1_TXD, IOMUX_CONFIG_ALT0);
+    mxc_iomux_set_pad(MX50_PIN_UART1_TXD, 
+                      PAD_CTL_DRV_HIGH | PAD_CTL_100K_PU |
+                      PAD_CTL_PUE_PULL | PAD_CTL_PKE_ENABLE);
 
-    } else if (g_uart_addr == UART4_BASE_ADDR) {
+  } else if (g_uart_addr == UART4_BASE_ADDR) {
 
-	/* UART4 RXD */
-	mxc_request_iomux(MX50_PIN_UART4_RXD, IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX50_PIN_UART4_RXD, 
-			  PAD_CTL_DRV_HIGH | PAD_CTL_100K_PU |
-			  PAD_CTL_PUE_PULL | PAD_CTL_PKE_ENABLE);
-	mxc_iomux_set_input(MUX_IN_UART4_IPP_UART_RXD_MUX_SELECT_INPUT, 0x1);
+    /* UART4 RXD */
+    mxc_request_iomux(MX50_PIN_UART4_RXD, IOMUX_CONFIG_ALT0);
+    mxc_iomux_set_pad(MX50_PIN_UART4_RXD, 
+                      PAD_CTL_DRV_HIGH | PAD_CTL_100K_PU |
+                      PAD_CTL_PUE_PULL | PAD_CTL_PKE_ENABLE);
+    mxc_iomux_set_input(MUX_IN_UART4_IPP_UART_RXD_MUX_SELECT_INPUT, 0x1);
 	
-	/* UART4 TXD */
-	mxc_request_iomux(MX50_PIN_UART4_TXD, IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX50_PIN_UART4_TXD,
-			  PAD_CTL_DRV_HIGH | PAD_CTL_100K_PU |
-			  PAD_CTL_PUE_PULL | PAD_CTL_PKE_ENABLE);
-    }
+    /* UART4 TXD */
+    mxc_request_iomux(MX50_PIN_UART4_TXD, IOMUX_CONFIG_ALT0);
+    mxc_iomux_set_pad(MX50_PIN_UART4_TXD,
+                      PAD_CTL_DRV_HIGH | PAD_CTL_100K_PU |
+                      PAD_CTL_PUE_PULL | PAD_CTL_PKE_ENABLE);
+  }
 }
 
 #ifdef CONFIG_MX50_I2C
@@ -445,56 +445,56 @@ void setup_i2c(unsigned int module_base)
 	case I2C1_BASE_ADDR:
 		/* i2c1 SDA */
 		mxc_request_iomux(MX50_PIN_I2C1_SDA,
-				IOMUX_CONFIG_ALT0 | IOMUX_CONFIG_SION);
+                      IOMUX_CONFIG_ALT0 | IOMUX_CONFIG_SION);
 		mxc_iomux_set_pad(MX50_PIN_I2C1_SDA, PAD_CTL_SRE_FAST |
-				PAD_CTL_ODE_OPENDRAIN_ENABLE |
-				PAD_CTL_DRV_HIGH | PAD_CTL_100K_PU |
-				PAD_CTL_HYS_ENABLE);
+                      PAD_CTL_ODE_OPENDRAIN_ENABLE |
+                      PAD_CTL_DRV_HIGH | PAD_CTL_100K_PU |
+                      PAD_CTL_HYS_ENABLE);
 		/* i2c1 SCL */
 		mxc_request_iomux(MX50_PIN_I2C1_SCL,
-				IOMUX_CONFIG_ALT0 | IOMUX_CONFIG_SION);
+                      IOMUX_CONFIG_ALT0 | IOMUX_CONFIG_SION);
 		mxc_iomux_set_pad(MX50_PIN_I2C1_SCL, PAD_CTL_SRE_FAST |
-				PAD_CTL_ODE_OPENDRAIN_ENABLE |
-				PAD_CTL_DRV_HIGH | PAD_CTL_100K_PU |
-				PAD_CTL_HYS_ENABLE);
+                      PAD_CTL_ODE_OPENDRAIN_ENABLE |
+                      PAD_CTL_DRV_HIGH | PAD_CTL_100K_PU |
+                      PAD_CTL_HYS_ENABLE);
 		break;
 	case I2C2_BASE_ADDR:
 		/* i2c2 SDA */
 		mxc_request_iomux(MX50_PIN_I2C2_SDA,
-				IOMUX_CONFIG_ALT0 | IOMUX_CONFIG_SION);
+                      IOMUX_CONFIG_ALT0 | IOMUX_CONFIG_SION);
 		mxc_iomux_set_pad(MX50_PIN_I2C2_SDA,
-				PAD_CTL_SRE_FAST |
-				PAD_CTL_ODE_OPENDRAIN_ENABLE |
-				PAD_CTL_DRV_HIGH | PAD_CTL_100K_PU |
-				PAD_CTL_HYS_ENABLE);
+                      PAD_CTL_SRE_FAST |
+                      PAD_CTL_ODE_OPENDRAIN_ENABLE |
+                      PAD_CTL_DRV_HIGH | PAD_CTL_100K_PU |
+                      PAD_CTL_HYS_ENABLE);
 
 		/* i2c2 SCL */
 		mxc_request_iomux(MX50_PIN_I2C2_SCL,
-				IOMUX_CONFIG_ALT0 | IOMUX_CONFIG_SION);
+                      IOMUX_CONFIG_ALT0 | IOMUX_CONFIG_SION);
 		mxc_iomux_set_pad(MX50_PIN_I2C2_SCL,
-				PAD_CTL_SRE_FAST |
-				PAD_CTL_ODE_OPENDRAIN_ENABLE |
-				PAD_CTL_DRV_HIGH | PAD_CTL_100K_PU |
-				PAD_CTL_HYS_ENABLE);
+                      PAD_CTL_SRE_FAST |
+                      PAD_CTL_ODE_OPENDRAIN_ENABLE |
+                      PAD_CTL_DRV_HIGH | PAD_CTL_100K_PU |
+                      PAD_CTL_HYS_ENABLE);
 		break;
 	case I2C3_BASE_ADDR:
 		/* i2c3 SDA */
 		mxc_request_iomux(MX50_PIN_I2C3_SDA,
-				IOMUX_CONFIG_ALT0 | IOMUX_CONFIG_SION);
+                      IOMUX_CONFIG_ALT0 | IOMUX_CONFIG_SION);
 		mxc_iomux_set_pad(MX50_PIN_I2C3_SDA,
-				PAD_CTL_SRE_FAST |
-				PAD_CTL_ODE_OPENDRAIN_ENABLE |
-				PAD_CTL_DRV_HIGH | PAD_CTL_100K_PU |
-				PAD_CTL_HYS_ENABLE);
+                      PAD_CTL_SRE_FAST |
+                      PAD_CTL_ODE_OPENDRAIN_ENABLE |
+                      PAD_CTL_DRV_HIGH | PAD_CTL_100K_PU |
+                      PAD_CTL_HYS_ENABLE);
 
 		/* i2c3 SCL */
 		mxc_request_iomux(MX50_PIN_I2C3_SCL,
-				IOMUX_CONFIG_ALT0 | IOMUX_CONFIG_SION);
+                      IOMUX_CONFIG_ALT0 | IOMUX_CONFIG_SION);
 		mxc_iomux_set_pad(MX50_PIN_I2C3_SCL,
-				PAD_CTL_SRE_FAST |
-				PAD_CTL_ODE_OPENDRAIN_ENABLE |
-				PAD_CTL_DRV_HIGH | PAD_CTL_100K_PU |
-				PAD_CTL_HYS_ENABLE);
+                      PAD_CTL_SRE_FAST |
+                      PAD_CTL_ODE_OPENDRAIN_ENABLE |
+                      PAD_CTL_DRV_HIGH | PAD_CTL_100K_PU |
+                      PAD_CTL_HYS_ENABLE);
 		break;
 	default:
 		printf("Invalid I2C base: 0x%x\n", module_base);
@@ -508,137 +508,137 @@ void setup_i2c(unsigned int module_base)
 
 s32 board_spi_get_cfg(struct imx_spi_dev_t *dev)
 {
-    switch (dev->slave.bus) {
+  switch (dev->slave.bus) {
 #if defined(CONFIG_IMX_ECSPI)
-       case 1:
-	dev->base = CSPI1_BASE_ADDR;
-	dev->freq = 1000000;
-	dev->ss = 0;
-	dev->ss_pol = IMX_SPI_ACTIVE_LOW;
-	dev->fifo_sz = 32;
-	dev->us_delay = 0;
-	dev->version = IMX_SPI_VERSION_2_3;
-	break;
+  case 1:
+    dev->base = CSPI1_BASE_ADDR;
+    dev->freq = 1000000;
+    dev->ss = 0;
+    dev->ss_pol = IMX_SPI_ACTIVE_LOW;
+    dev->fifo_sz = 32;
+    dev->us_delay = 0;
+    dev->version = IMX_SPI_VERSION_2_3;
+    break;
 
-       case 2:
-	dev->base = CSPI2_BASE_ADDR;
-	dev->freq = 1000000;
-	dev->ss = 0;
-	dev->ss_pol = IMX_SPI_ACTIVE_LOW;
-	dev->fifo_sz = 32;
-	dev->us_delay = 0;
-	dev->version = IMX_SPI_VERSION_2_3;
-	break;
+  case 2:
+    dev->base = CSPI2_BASE_ADDR;
+    dev->freq = 1000000;
+    dev->ss = 0;
+    dev->ss_pol = IMX_SPI_ACTIVE_LOW;
+    dev->fifo_sz = 32;
+    dev->us_delay = 0;
+    dev->version = IMX_SPI_VERSION_2_3;
+    break;
 #endif
 
 #if defined(CONFIG_IMX_CSPI)
-      case 3:
-	dev->base = CSPI3_BASE_ADDR;
-	dev->freq = 2000000;
-	dev->ss = 0;
-	dev->ss_pol = IMX_SPI_ACTIVE_HIGH;
-	dev->fifo_sz = 32;
-	dev->us_delay = 0;
-	dev->version = IMX_SPI_VERSION_0_7;
-	break;
+  case 3:
+    dev->base = CSPI3_BASE_ADDR;
+    dev->freq = 2000000;
+    dev->ss = 0;
+    dev->ss_pol = IMX_SPI_ACTIVE_HIGH;
+    dev->fifo_sz = 32;
+    dev->us_delay = 0;
+    dev->version = IMX_SPI_VERSION_0_7;
+    break;
 #endif
 
-     default:
-       printf("Invalid SPI Bus ID %d! \n", dev->slave.bus);
-       return 1;
-    }
+  default:
+    printf("Invalid SPI Bus ID %d! \n", dev->slave.bus);
+    return 1;
+  }
 
-    return 0;
+  return 0;
 }
 
 void board_spi_io_init(struct imx_spi_dev_t *dev)
 {
-    switch (dev->base) {
+  switch (dev->base) {
 
-      case CSPI1_BASE_ADDR:
-	mxc_request_iomux(MX50_PIN_ECSPI1_MOSI, IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX50_PIN_ECSPI1_MOSI, 
-			  PAD_CTL_PKE_ENABLE | PAD_CTL_PUE_PULL |
-			  PAD_CTL_DRV_HIGH | PAD_CTL_ODE_OPENDRAIN_NONE |
-			  PAD_CTL_100K_PD);
+  case CSPI1_BASE_ADDR:
+    mxc_request_iomux(MX50_PIN_ECSPI1_MOSI, IOMUX_CONFIG_ALT0);
+    mxc_iomux_set_pad(MX50_PIN_ECSPI1_MOSI, 
+                      PAD_CTL_PKE_ENABLE | PAD_CTL_PUE_PULL |
+                      PAD_CTL_DRV_HIGH | PAD_CTL_ODE_OPENDRAIN_NONE |
+                      PAD_CTL_100K_PD);
 
-	mxc_request_iomux(MX50_PIN_ECSPI1_MISO, IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX50_PIN_ECSPI1_MISO,
-			  PAD_CTL_PKE_ENABLE | PAD_CTL_PUE_PULL |
-			  PAD_CTL_DRV_HIGH | PAD_CTL_ODE_OPENDRAIN_NONE |
-			  PAD_CTL_100K_PD);
+    mxc_request_iomux(MX50_PIN_ECSPI1_MISO, IOMUX_CONFIG_ALT0);
+    mxc_iomux_set_pad(MX50_PIN_ECSPI1_MISO,
+                      PAD_CTL_PKE_ENABLE | PAD_CTL_PUE_PULL |
+                      PAD_CTL_DRV_HIGH | PAD_CTL_ODE_OPENDRAIN_NONE |
+                      PAD_CTL_100K_PD);
 
 
-	mxc_request_iomux(MX50_PIN_ECSPI1_SS0, IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX50_PIN_ECSPI1_SS0, 
-			  PAD_CTL_PKE_ENABLE | PAD_CTL_PUE_PULL |
-			  PAD_CTL_DRV_HIGH | PAD_CTL_ODE_OPENDRAIN_NONE |
-			  PAD_CTL_100K_PU);
+    mxc_request_iomux(MX50_PIN_ECSPI1_SS0, IOMUX_CONFIG_ALT0);
+    mxc_iomux_set_pad(MX50_PIN_ECSPI1_SS0, 
+                      PAD_CTL_PKE_ENABLE | PAD_CTL_PUE_PULL |
+                      PAD_CTL_DRV_HIGH | PAD_CTL_ODE_OPENDRAIN_NONE |
+                      PAD_CTL_100K_PU);
 	
-	mxc_request_iomux(MX50_PIN_ECSPI1_SCLK, IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX50_PIN_ECSPI1_SCLK, 
-			  PAD_CTL_PKE_ENABLE | PAD_CTL_PUE_PULL |
-			  PAD_CTL_DRV_HIGH | PAD_CTL_ODE_OPENDRAIN_NONE |
-			  PAD_CTL_100K_PD);
-	break;
+    mxc_request_iomux(MX50_PIN_ECSPI1_SCLK, IOMUX_CONFIG_ALT0);
+    mxc_iomux_set_pad(MX50_PIN_ECSPI1_SCLK, 
+                      PAD_CTL_PKE_ENABLE | PAD_CTL_PUE_PULL |
+                      PAD_CTL_DRV_HIGH | PAD_CTL_ODE_OPENDRAIN_NONE |
+                      PAD_CTL_100K_PD);
+    break;
 
-      case CSPI2_BASE_ADDR:
-	mxc_request_iomux(MX50_PIN_ECSPI2_MOSI, IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX50_PIN_ECSPI2_MOSI, 
-			  PAD_CTL_PKE_ENABLE | PAD_CTL_PUE_PULL |
-			  PAD_CTL_DRV_HIGH | PAD_CTL_ODE_OPENDRAIN_NONE |
-			  PAD_CTL_100K_PD);
+  case CSPI2_BASE_ADDR:
+    mxc_request_iomux(MX50_PIN_ECSPI2_MOSI, IOMUX_CONFIG_ALT0);
+    mxc_iomux_set_pad(MX50_PIN_ECSPI2_MOSI, 
+                      PAD_CTL_PKE_ENABLE | PAD_CTL_PUE_PULL |
+                      PAD_CTL_DRV_HIGH | PAD_CTL_ODE_OPENDRAIN_NONE |
+                      PAD_CTL_100K_PD);
 
-	mxc_request_iomux(MX50_PIN_ECSPI2_MISO, IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX50_PIN_ECSPI2_MISO,
-			  PAD_CTL_PKE_ENABLE | PAD_CTL_PUE_PULL |
-			  PAD_CTL_DRV_HIGH | PAD_CTL_ODE_OPENDRAIN_NONE |
-			  PAD_CTL_100K_PD);
+    mxc_request_iomux(MX50_PIN_ECSPI2_MISO, IOMUX_CONFIG_ALT0);
+    mxc_iomux_set_pad(MX50_PIN_ECSPI2_MISO,
+                      PAD_CTL_PKE_ENABLE | PAD_CTL_PUE_PULL |
+                      PAD_CTL_DRV_HIGH | PAD_CTL_ODE_OPENDRAIN_NONE |
+                      PAD_CTL_100K_PD);
 
 
-	mxc_request_iomux(MX50_PIN_ECSPI2_SS0, IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX50_PIN_ECSPI2_SS0, 
-			  PAD_CTL_PKE_ENABLE | PAD_CTL_PUE_PULL |
-			  PAD_CTL_DRV_HIGH | PAD_CTL_ODE_OPENDRAIN_NONE |
-			  PAD_CTL_100K_PU);
+    mxc_request_iomux(MX50_PIN_ECSPI2_SS0, IOMUX_CONFIG_ALT0);
+    mxc_iomux_set_pad(MX50_PIN_ECSPI2_SS0, 
+                      PAD_CTL_PKE_ENABLE | PAD_CTL_PUE_PULL |
+                      PAD_CTL_DRV_HIGH | PAD_CTL_ODE_OPENDRAIN_NONE |
+                      PAD_CTL_100K_PU);
 	
-	mxc_request_iomux(MX50_PIN_ECSPI2_SCLK, IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX50_PIN_ECSPI2_SCLK, 
-			  PAD_CTL_PKE_ENABLE | PAD_CTL_PUE_PULL |
-			  PAD_CTL_DRV_HIGH | PAD_CTL_ODE_OPENDRAIN_NONE |
-			  PAD_CTL_100K_PD);
-	break;
+    mxc_request_iomux(MX50_PIN_ECSPI2_SCLK, IOMUX_CONFIG_ALT0);
+    mxc_iomux_set_pad(MX50_PIN_ECSPI2_SCLK, 
+                      PAD_CTL_PKE_ENABLE | PAD_CTL_PUE_PULL |
+                      PAD_CTL_DRV_HIGH | PAD_CTL_ODE_OPENDRAIN_NONE |
+                      PAD_CTL_100K_PD);
+    break;
 
-      case CSPI3_BASE_ADDR:
-	mxc_request_iomux(MX50_PIN_CSPI_MOSI, IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX50_PIN_CSPI_MOSI, 
-			  PAD_CTL_PKE_ENABLE | PAD_CTL_PUE_PULL |
-			  PAD_CTL_DRV_HIGH | PAD_CTL_ODE_OPENDRAIN_NONE |
-			  PAD_CTL_100K_PD);
+  case CSPI3_BASE_ADDR:
+    mxc_request_iomux(MX50_PIN_CSPI_MOSI, IOMUX_CONFIG_ALT0);
+    mxc_iomux_set_pad(MX50_PIN_CSPI_MOSI, 
+                      PAD_CTL_PKE_ENABLE | PAD_CTL_PUE_PULL |
+                      PAD_CTL_DRV_HIGH | PAD_CTL_ODE_OPENDRAIN_NONE |
+                      PAD_CTL_100K_PD);
 
-	mxc_request_iomux(MX50_PIN_CSPI_MISO, IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX50_PIN_CSPI_MISO,
-			  PAD_CTL_PKE_ENABLE | PAD_CTL_PUE_PULL |
-			  PAD_CTL_DRV_HIGH | PAD_CTL_ODE_OPENDRAIN_NONE |
-			  PAD_CTL_100K_PD);
+    mxc_request_iomux(MX50_PIN_CSPI_MISO, IOMUX_CONFIG_ALT0);
+    mxc_iomux_set_pad(MX50_PIN_CSPI_MISO,
+                      PAD_CTL_PKE_ENABLE | PAD_CTL_PUE_PULL |
+                      PAD_CTL_DRV_HIGH | PAD_CTL_ODE_OPENDRAIN_NONE |
+                      PAD_CTL_100K_PD);
 
 
-	mxc_request_iomux(MX50_PIN_CSPI_SS0, IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX50_PIN_CSPI_SS0, 
-			  PAD_CTL_PKE_ENABLE | PAD_CTL_PUE_PULL |
-			  PAD_CTL_DRV_HIGH | PAD_CTL_ODE_OPENDRAIN_NONE |
-			  PAD_CTL_100K_PU);
+    mxc_request_iomux(MX50_PIN_CSPI_SS0, IOMUX_CONFIG_ALT0);
+    mxc_iomux_set_pad(MX50_PIN_CSPI_SS0, 
+                      PAD_CTL_PKE_ENABLE | PAD_CTL_PUE_PULL |
+                      PAD_CTL_DRV_HIGH | PAD_CTL_ODE_OPENDRAIN_NONE |
+                      PAD_CTL_100K_PU);
 	
-	mxc_request_iomux(MX50_PIN_CSPI_SCLK, IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX50_PIN_CSPI_SCLK, 
-			  PAD_CTL_PKE_ENABLE | PAD_CTL_PUE_PULL |
-			  PAD_CTL_DRV_HIGH | PAD_CTL_ODE_OPENDRAIN_NONE |
-			  PAD_CTL_100K_PD);
-	break;
+    mxc_request_iomux(MX50_PIN_CSPI_SCLK, IOMUX_CONFIG_ALT0);
+    mxc_iomux_set_pad(MX50_PIN_CSPI_SCLK, 
+                      PAD_CTL_PKE_ENABLE | PAD_CTL_PUE_PULL |
+                      PAD_CTL_DRV_HIGH | PAD_CTL_ODE_OPENDRAIN_NONE |
+                      PAD_CTL_100K_PD);
+    break;
 
-      default:
-	break;
-    }
+  default:
+    break;
+  }
 }
 #endif
 
@@ -666,7 +666,7 @@ static void setup_fec(void)
 	mxc_iomux_set_pad(MX50_PIN_DISP_D4, 0x0);
 	mxc_iomux_set_input(MUX_IN_FEC_FEC_RDATA_0_SELECT_INPUT, 0x0);
 
-	 /* FEC TXD1 */
+  /* FEC TXD1 */
 	mxc_request_iomux(MX50_PIN_DISP_D6, IOMUX_CONFIG_ALT2);
 	mxc_iomux_set_pad(MX50_PIN_DISP_D6, 0x004);
 
@@ -715,11 +715,11 @@ static void setup_fec(void)
 #ifdef CONFIG_MMC
 
 struct fsl_esdhc_cfg esdhc_cfg[CONFIG_SYS_FSL_ESDHC_NUM] = {
-    {MMC_SDHC1_BASE_ADDR, 1, 1, 52000000},
-    {MMC_SDHC2_BASE_ADDR, 1, 1, 52000000},
-    /* BEN - FSL errata states that max MMC clock is 40 MHz for ESDHC3 in SDR mode */
-    {MMC_SDHC3_BASE_ADDR, 1, 1, 40000000},
-    {MMC_SDHC4_BASE_ADDR, 1, 1, 52000000},
+  {MMC_SDHC1_BASE_ADDR, 1, 1, 52000000},
+  {MMC_SDHC2_BASE_ADDR, 1, 1, 52000000},
+  /* BEN - FSL errata states that max MMC clock is 40 MHz for ESDHC3 in SDR mode */
+  {MMC_SDHC3_BASE_ADDR, 1, 1, 40000000},
+  {MMC_SDHC4_BASE_ADDR, 1, 1, 52000000},
 };
 
 
@@ -749,15 +749,15 @@ int get_mmc_env_devno(void)
 
 int esdhc_gpio_init(bd_t *bis)
 {
-    s32 status = 0;
-    u32 index = 0;
-    u32 pad_cfg = 
-	PAD_CTL_PKE_ENABLE | PAD_CTL_PUE_PULL | PAD_CTL_47K_PU |
-	PAD_CTL_DRV_HIGH | PAD_CTL_ODE_OPENDRAIN_NONE;
+  s32 status = 0;
+  u32 index = 0;
+  u32 pad_cfg = 
+    PAD_CTL_PKE_ENABLE | PAD_CTL_PUE_PULL | PAD_CTL_47K_PU |
+    PAD_CTL_DRV_HIGH | PAD_CTL_ODE_OPENDRAIN_NONE;
 		
-    for (index = 0; index < CONFIG_SYS_FSL_ESDHC_NUM;
-	 ++index) {
-	switch (index) {
+  for (index = 0; index < CONFIG_SYS_FSL_ESDHC_NUM;
+       ++index) {
+    switch (index) {
 	  case 0:
 	    /* not used on Yoshi */
 	    continue;		    
@@ -840,16 +840,16 @@ int esdhc_gpio_init(bd_t *bis)
 			
 	  default:
 	    printf("Warning: you configured more ESDHC controller"
-		   "(%d) as supported by the board(2)\n",
-		   CONFIG_SYS_FSL_ESDHC_NUM);
+             "(%d) as supported by the board(2)\n",
+             CONFIG_SYS_FSL_ESDHC_NUM);
 	    return status;
 	    break;
-	}
-		
-	status |= fsl_esdhc_initialize(bis, &esdhc_cfg[index]);
     }
+		
+    status |= fsl_esdhc_initialize(bis, &esdhc_cfg[index]);
+  }
 
-    return status;
+  return status;
 }
 
 int board_mmc_init(bd_t *bis)
@@ -900,52 +900,52 @@ inline int check_boot_mode(void)
 #if defined(CONFIG_CMD_IDME)
 	if (idme_get_var("bootmode", boot_mode, 20)) 
 #endif
-	{
+    {
 	    return -1;
-	}
+    }
 
 	boot_cmd[0] = 0;
 
 	if (!strncmp(boot_mode, "diags", 5)) {
-	    printf ("BOOTMODE OVERRIDE: DIAGS\n");
-	    strcpy(boot_cmd, "run bootcmd_diags");
+    printf ("BOOTMODE OVERRIDE: DIAGS\n");
+    strcpy(boot_cmd, "run bootcmd_diags");
 	} else if (!strncmp(boot_mode, "fastboot", 8)) {
-	    printf ("BOOTMODE OVERRIDE: FASTBOOT\n");
-	    strcpy(boot_cmd, "run bootcmd_fastboot");
+    printf ("BOOTMODE OVERRIDE: FASTBOOT\n");
+    strcpy(boot_cmd, "run bootcmd_fastboot");
 	} else if (!strncmp(boot_mode, "factory", 7)) {
 #if defined(CONFIG_PMIC)
-	    if (pmic_charging()) {
-		char *cmd = (char *) CONFIG_BISTCMD_LOCATION;		
-		/* Ignore any bist commands */
-		cmd[0] = 0;
+    if (pmic_charging()) {
+      char *cmd = (char *) CONFIG_BISTCMD_LOCATION;		
+      /* Ignore any bist commands */
+      cmd[0] = 0;
 
-		printf ("BOOTMODE OVERRIDE OVERRIDE: DIAGS\n");
+      printf ("BOOTMODE OVERRIDE OVERRIDE: DIAGS\n");
 
 #if defined(CONFIG_CMD_IDME)
-		/* Update bootmode idme var */
-		idme_update_var("bootmode", "diags");
+      /* Update bootmode idme var */
+      idme_update_var("bootmode", "diags");
 #endif
-		/* Set the bootcmd to diags and boot immediately */
-		setenv("bootcmd", "run bootcmd_diags");
-		setenv("bootdelay", "0");
+      /* Set the bootcmd to diags and boot immediately */
+      setenv("bootcmd", "run bootcmd_diags");
+      setenv("bootdelay", "0");
 		
-		return 0;
-	    }
+      return 0;
+    }
 #endif	//CONFIG_PMIC
-	    printf ("BOOTMODE OVERRIDE: FACTORY\n");
-	    strcpy(boot_cmd, "run bootcmd_factory");
+    printf ("BOOTMODE OVERRIDE: FACTORY\n");
+    strcpy(boot_cmd, "run bootcmd_factory");
 	} else if (!strncmp(boot_mode, "reset", 7)) {
-	    printf ("BOOTMODE OVERRIDE: RESET\n");
-	    strcpy(boot_cmd, "bist reset");
+    printf ("BOOTMODE OVERRIDE: RESET\n");
+    strcpy(boot_cmd, "bist reset");
 	} else if (!strncmp(boot_mode, "main", 4)) {
-	    /* clear bootargs */
-	    setenv("bootargs", "\0");
+    /* clear bootargs */
+    setenv("bootargs", "\0");
 
-	    /* set bootcmd back to default */
-	    sprintf(boot_cmd, "bootm 0x%x", CONFIG_MMC_BOOTFLASH_ADDR);
-	    return 0;
+    /* set bootcmd back to default */
+    sprintf(boot_cmd, "bootm 0x%x", CONFIG_MMC_BOOTFLASH_ADDR);
+    return 0;
 	} else {
-	    return 0;
+    return 0;
 	}
 	
 	setenv("bootcmd", boot_cmd);
@@ -957,106 +957,106 @@ inline int check_boot_mode(void)
 void board_power_off(void) 
 {
 #ifdef CONFIG_PMIC
-    pmic_power_off();
+  pmic_power_off();
 #endif
 }
 
 void board_reset(void) 
 {
 #ifdef CONFIG_PMIC
-    if (!pmic_set_alarm(5))
+  if (!pmic_set_alarm(5))
 #endif
-	printf("Couldn't reboot device, halting\n");
+    printf("Couldn't reboot device, halting\n");
 
-    if (is_soc_rev(CHIP_REV_1_0) == 0) {
+  if (is_soc_rev(CHIP_REV_1_0) == 0) {
 
-	board_power_off();
+    board_power_off();
 
-    } else {
+  } else {
 
 #ifdef CONFIG_PMIC
-	pmic_reset();
+    pmic_reset();
 #endif
-    } 
+  } 
 }
 
 int board_late_init(void)
 {
 #if defined(CONFIG_MX50_UART_DETECT)
 	{
-	const struct board_type *board;
+    const struct board_type *board;
 	
-	board = get_board_type();
+    board = get_board_type();
 
-	/* Finkle EVT1 boards have console on UART4 */
-	if (strncmp(board->id, "00400", 5) == 0) {
+    /* Finkle EVT1 boards have console on UART4 */
+    if (strncmp(board->id, "00400", 5) == 0) {
 
 	    /* reinit uboot to use UART4 */
 	    if (g_uart_addr != UART4_BASE_ADDR) {
-		g_uart_addr = UART4_BASE_ADDR;
+        g_uart_addr = UART4_BASE_ADDR;
 
-		/* UART4 RXD */
-		mxc_request_iomux(MX50_PIN_UART4_RXD, IOMUX_CONFIG_ALT0);
-		mxc_iomux_set_pad(MX50_PIN_UART4_RXD, 
-				  PAD_CTL_DRV_HIGH | PAD_CTL_100K_PU |
-				  PAD_CTL_PUE_PULL | PAD_CTL_PKE_ENABLE);
-		mxc_iomux_set_input(MUX_IN_UART4_IPP_UART_RXD_MUX_SELECT_INPUT, 0x1);
+        /* UART4 RXD */
+        mxc_request_iomux(MX50_PIN_UART4_RXD, IOMUX_CONFIG_ALT0);
+        mxc_iomux_set_pad(MX50_PIN_UART4_RXD, 
+                          PAD_CTL_DRV_HIGH | PAD_CTL_100K_PU |
+                          PAD_CTL_PUE_PULL | PAD_CTL_PKE_ENABLE);
+        mxc_iomux_set_input(MUX_IN_UART4_IPP_UART_RXD_MUX_SELECT_INPUT, 0x1);
 	
-		/* UART4 TXD */
-		mxc_request_iomux(MX50_PIN_UART4_TXD, IOMUX_CONFIG_ALT0);
-		mxc_iomux_set_pad(MX50_PIN_UART4_TXD,
-				  PAD_CTL_DRV_HIGH | PAD_CTL_100K_PU |
-				  PAD_CTL_PUE_PULL | PAD_CTL_PKE_ENABLE);
+        /* UART4 TXD */
+        mxc_request_iomux(MX50_PIN_UART4_TXD, IOMUX_CONFIG_ALT0);
+        mxc_iomux_set_pad(MX50_PIN_UART4_TXD,
+                          PAD_CTL_DRV_HIGH | PAD_CTL_100K_PU |
+                          PAD_CTL_PUE_PULL | PAD_CTL_PKE_ENABLE);
 
-		serial_init();
+        serial_init();
 	    }
-	}
+    }
 	}
 #endif
 
 	/* drive CHRGLED_DIS low to allow PMIC to control LED state */
 	mxc_request_iomux(MX50_PIN_EIM_DA2, IOMUX_CONFIG_GPIO);
 	mxc_iomux_set_pad(MX50_PIN_EIM_DA2, 
-			  PAD_CTL_PKE_ENABLE | PAD_CTL_PUE_PULL |
-			  PAD_CTL_ODE_OPENDRAIN_NONE | PAD_CTL_DRV_HIGH| 
-			  PAD_CTL_100K_PD);
+                    PAD_CTL_PKE_ENABLE | PAD_CTL_PUE_PULL |
+                    PAD_CTL_ODE_OPENDRAIN_NONE | PAD_CTL_DRV_HIGH| 
+                    PAD_CTL_100K_PD);
 
 	mx50_gpio_direction(IOMUX_TO_GPIO(MX50_PIN_EIM_DA2), MX50_GPIO_DIRECTION_OUT);
 	mx50_gpio_set(IOMUX_TO_GPIO(MX50_PIN_EIM_DA2), 0);
 
 #if defined(CONFIG_PMIC)
 	{
-	unsigned short voltage = BATTERY_INVALID_VOLTAGE;
-	int ret;
+    unsigned short voltage = BATTERY_INVALID_VOLTAGE;
+    int ret;
 
-	pmic_init();
+    pmic_init();
 
-	ret = pmic_adc_read_voltage(&voltage);
-	if (ret) {
+    ret = pmic_adc_read_voltage(&voltage);
+    if (ret) {
 	    printf("Battery voltage: %d mV\n\n", voltage);
-	} else {
+    } else {
 	    printf("Battery voltage read fail!\n\n");
-	}
+    }
 #if defined(CONFIG_GADGET_FILE_STORAGE)
-	/* stop boot if battery is too low */
-	while (voltage != BATTERY_INVALID_VOLTAGE && voltage <= CONFIG_BOOT_HALT_VOLTAGE) {
+    /* stop boot if battery is too low */
+    while (voltage != BATTERY_INVALID_VOLTAGE && voltage <= CONFIG_BOOT_HALT_VOLTAGE) {
 
-		printf("Battery voltage too low.  Please plug in a charger\n");
-		ret = file_storage_enable(CONFIG_BOOT_CONTINUE_VOLTAGE);
-		if (ret) {
+      printf("Battery voltage too low.  Please plug in a charger\n");
+      ret = file_storage_enable(CONFIG_BOOT_CONTINUE_VOLTAGE);
+      if (ret) {
 #ifdef CONFIG_CMD_HALT
 		    printf("Can't enable charger.. shutting down\n");
 		    board_power_off();
 #endif	//CONFIG_CMD_HALT
-		}
+      }
 
-		ret = pmic_adc_read_voltage(&voltage);
-		if (ret) {
+      ret = pmic_adc_read_voltage(&voltage);
+      if (ret) {
 		    printf("Battery voltage: %d mV\n", voltage);
-		} else {
+      } else {
 		    printf("Battery voltage read fail!\n");
-		}
-	}
+      }
+    }
 #endif	//CONFIG_GADGET_FILE_STORAGE
 	}
 #endif	//CONFIG_PMIC
@@ -1078,9 +1078,9 @@ int checkboard(void)
 
 	board = get_board_type();
 	if (board) {
-	    printf("%s\n", board->name);
+    printf("%s\n", board->name);
 	} else {
-	    printf("Unknown\n");
+    printf("Unknown\n");
 	}
 
 	printf("Boot Reason: [");
@@ -1156,9 +1156,9 @@ inline int check_post_mode(void)
 #if defined(CONFIG_CMD_IDME)
 	if (idme_get_var("postmode", post_mode, 20)) 
 #endif
-	{
-		return -1;
-	}
+    {
+      return -1;
+    }
 
 	if (!strncmp(post_mode, "normal", 6)) {
 		setenv("post_hotkeys", "0");
@@ -1185,44 +1185,44 @@ inline int check_post_mode(void)
 #define dah()  {led_2_on();  morse_delay(3); gap();}
 void sos (void)
 {
-    dit(); dit(); dit(); short_gap(); /* Morse Code S */
-    dah(); dah(); dah(); short_gap(); /* Morse Code O */
-    dit(); dit(); dit(); short_gap(); /* Morse Code S */
-    long_gap();
+  dit(); dit(); dit(); short_gap(); /* Morse Code S */
+  dah(); dah(); dah(); short_gap(); /* Morse Code O */
+  dit(); dit(); dit(); short_gap(); /* Morse Code S */
+  long_gap();
 }
 void ok (void)
 {
-    dah(); dah(); dah(); short_gap(); /* Morse Code O */
-    dah(); dit(); dah(); short_gap(); /* Morse Code K */
-    long_gap();
+  dah(); dah(); dah(); short_gap(); /* Morse Code O */
+  dah(); dit(); dah(); short_gap(); /* Morse Code K */
+  long_gap();
 }
 void hang_feedback (void)
 {
-    led_init();
-    sos();
-    if (!ctrlc()) {
+  led_init();
+  sos();
+  if (!ctrlc()) {
 #ifdef CONFIG_CMD_HALT
-      board_power_off(); 
+    board_power_off(); 
 #endif
-      while (1) {};
-    }
+    while (1) {};
+  }
 }
 #endif
 #ifdef CONFIG_POST
 int post_hotkeys_pressed(void)
 {
-    char *value;
-    int ret;
+  char *value;
+  int ret;
 
-    check_post_mode();
+  check_post_mode();
 
-    ret = ctrlc();
-    if (!ret) {
-        value = getenv("post_hotkeys");
-        if (value != NULL)
+  ret = ctrlc();
+  if (!ret) {
+    value = getenv("post_hotkeys");
+    if (value != NULL)
 	    ret = simple_strtoul(value, NULL, 10);
-    }
-    return ret;
+  }
+  return ret;
 }
 #endif
 
