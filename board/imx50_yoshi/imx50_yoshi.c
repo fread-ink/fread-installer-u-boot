@@ -160,7 +160,6 @@ int setup_board_info(void)
 
 
 #if defined(CONFIG_CMD_IDME)
-  idme_check_update();
   if (idme_get_var("pcbsn", (char *) board_id, sizeof(board_id))) 
 #endif
     {
@@ -352,29 +351,8 @@ int dram_init(void)
         return 0;
 	    } 
     }
-
-#ifdef CONFIG_FOR_FACTORY
-    /* Clear out buffer */
-    memset(boardid_input_buf, 0, sizeof(boardid_input_buf));
-
-    printf("Board ID is invalid!  Please enter a valid board id:\n");
-    readline_into_buffer(">", boardid_input_buf);
-
-    if (strlen(boardid_input_buf) != CONFIG_PCBA_LEN) {
-	    printf("\nError! Board ID must be %d chars long.\n\n", CONFIG_PCBA_LEN);
-	    continue;
-    }
-
-    idme_update_var("pcbsn", boardid_input_buf);
-
-    /* Set bootmode to diags if this is the first boot */
-    idme_update_var("bootmode", "diags");
-
-    setup_board_info();
-#else
     printf("Invalid board id!  Can't determine system type for RAM init.. bailing!\n");
     return 0;
-#endif /* CONFIG_FOR_FACTORY */
   }
   return 0;
 }
@@ -887,72 +865,6 @@ int board_init(void)
 	return 0;
 }
 
-#if 0
-inline int check_boot_mode(void) 
-{
-	char boot_mode[20];
-	char boot_cmd[20];
-
-#ifdef CONFIG_BIST
-	setenv("bootdelay", "-1");
-#endif
-
-#if defined(CONFIG_CMD_IDME)
-	if (idme_get_var("bootmode", boot_mode, 20)) 
-#endif
-    {
-	    return -1;
-    }
-
-	boot_cmd[0] = 0;
-
-	if (!strncmp(boot_mode, "diags", 5)) {
-    printf ("BOOTMODE OVERRIDE: DIAGS\n");
-    strcpy(boot_cmd, "run bootcmd_diags");
-	} else if (!strncmp(boot_mode, "fastboot", 8)) {
-    printf ("BOOTMODE OVERRIDE: FASTBOOT\n");
-    strcpy(boot_cmd, "run bootcmd_fastboot");
-	} else if (!strncmp(boot_mode, "factory", 7)) {
-#if defined(CONFIG_PMIC)
-    if (pmic_charging()) {
-      char *cmd = (char *) CONFIG_BISTCMD_LOCATION;		
-      /* Ignore any bist commands */
-      cmd[0] = 0;
-
-      printf ("BOOTMODE OVERRIDE OVERRIDE: DIAGS\n");
-
-#if defined(CONFIG_CMD_IDME)
-      /* Update bootmode idme var */
-      idme_update_var("bootmode", "diags");
-#endif
-      /* Set the bootcmd to diags and boot immediately */
-      setenv("bootcmd", "run bootcmd_diags");
-      setenv("bootdelay", "0");
-		
-      return 0;
-    }
-#endif	//CONFIG_PMIC
-    printf ("BOOTMODE OVERRIDE: FACTORY\n");
-    strcpy(boot_cmd, "run bootcmd_factory");
-	} else if (!strncmp(boot_mode, "reset", 7)) {
-    printf ("BOOTMODE OVERRIDE: RESET\n");
-    strcpy(boot_cmd, "bist reset");
-	} else if (!strncmp(boot_mode, "main", 4)) {
-    /* clear bootargs */
-    setenv("bootargs", "\0");
-
-    /* set bootcmd back to default */
-    sprintf(boot_cmd, "bootm 0x%x", CONFIG_MMC_BOOTFLASH_ADDR);
-    return 0;
-	} else {
-    return 0;
-	}
-	
-	setenv("bootcmd", boot_cmd);
-
-	return 0;
-}
-#endif
 
 void board_power_off(void) 
 {
