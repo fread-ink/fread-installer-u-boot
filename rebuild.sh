@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 export TYPE=prod # see u-boot-2009.08/board/imx50_yoshi/config.mk
 export ARCH=arm
@@ -8,6 +8,5 @@ make clean
 make distclean
 rm -rf u-boot.*
 
-make imx50_yoshi_config
-make all
+./build.sh
 
