@@ -877,12 +877,7 @@ static void fastboot_parse_cmd(char *cmdbuf)
 
       printf("done\n");
       
-      fastboot_send_reply("OKAY");    
-    } else if (strncmp(cmdbuf, "verify", 6) == 0) {
-        /* Send a digital signature to verify the downloaded
-	   data.  Required if the bootloader is "secure"
-	   otherwise "flash" and "boot" will be ignored. */
-	fastboot_send_reply("FAILunsupported command");
+      fastboot_send_reply("OKAY");
 
   // upload mmc contents to fastboot client
     } else if (strncmp(cmdbuf, "upload", 6) == 0) {
@@ -911,7 +906,7 @@ static void fastboot_parse_cmd(char *cmdbuf)
       num_to_hex(32, mmc->capacity, ram_dest + 4); // add the data length (with a null terminator)
       
       fastboot_send_reply_actual(ram_dest, 4 + 34); // TODO why not 4 + 33? where does the last byte come from?
-
+      
       upload_size = mmc->capacity;
 
       while(upload_size > 0) {
@@ -949,10 +944,10 @@ static void fastboot_parse_cmd(char *cmdbuf)
       }
 
       crc_cac=~crc_cac; // invert it at the end
-      num_to_hex(32, crc_cac, (unsigned char *) CONFIG_LOADADDR); // add the data length (with a null terminator)
+      //      num_to_hex(32, crc_cac, (unsigned char *) CONFIG_LOADADDR); // add the data length (with a null terminator)
       
-      // send CRC32 as ascii hex (8 chars)
-      fastboot_send_reply_actual((unsigned char *) CONFIG_LOADADDR, 8);
+      // send crc32 (4 bytes)
+      fastboot_send_reply_actual((unsigned char *) &crc_cac, 4);
 
       goto out;
 

@@ -160,7 +160,7 @@
 /* Lab 126 cmds */
 //#define CONFIG_CMD_BIST		1
 //#define CONFIG_CMD_PMIC		1
-//#define CONFIG_CMD_IDME		1
+#define CONFIG_CMD_IDME		1
 //#define CONFIG_CMD_HALT		1
 
 #define CONFIG_IDME_UPDATE		1

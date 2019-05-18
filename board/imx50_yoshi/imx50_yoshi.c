@@ -1076,7 +1076,7 @@ int checkboard(void)
 
 	printf("Board: ");
 
-	board = get_board_type();
+	board = get_board_toype();
 	if (board) {
 	    printf("%s\n", board->name);
 	} else {
