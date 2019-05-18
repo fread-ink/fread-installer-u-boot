@@ -825,8 +825,8 @@ static void fastboot_parse_cmd(char *cmdbuf)
 
     strcpy(ram_dest, "ATAD");
     num_to_hex(32, mmc->capacity, ram_dest + 4); // add the data length (with a null terminator)
-      
-    fastboot_send_reply_actual(ram_dest, 4 + 34); // TODO why not 4 + 33? where does the last byte come from?
+
+    fastboot_send_reply_actual(ram_dest, 4 + 33);
       
     upload_size = mmc->capacity;
 
