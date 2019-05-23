@@ -683,7 +683,7 @@ static void fastboot_parse_cmd(char *cmdbuf)
 {
   char* reply_buf = NULL;
   unsigned int rx_length;
-  unsigned int flash_addr;
+  unsigned long int flash_addr;
   unsigned int upload_size;
   unsigned int upload_chunk_size;
   unsigned int uploaded;
@@ -870,20 +870,14 @@ static void fastboot_parse_cmd(char *cmdbuf)
     //      num_to_hex(32, crc_cac, (unsigned char *) CONFIG_LOADADDR); // add the data length (with a null terminator)
       
     // send crc32 (4 bytes)
+    printf("CRC32: %x\n", crc_cac);
     fastboot_send_reply_actual((unsigned char *) &crc_cac, 4);
 
     goto out;
 
   } else if (strncmp(cmdbuf, "flash", 5) == 0) {
 
-    /* Write the previously downloaded image to the
-       named partition (if possible). */
-    flash_addr = fastboot_find_partition(cmdbuf + 6, &part_size, &part_index, &mmc_partition);
-
-    if (flash_addr == INVALID_PARTITION) {
-	    fastboot_send_reply("FAILInvalid partition");
-	    goto out;
-    }
+    flash_addr = strtoul(cmdbuf + 6, NULL, 16);
 
 #ifdef CONFIG_GENERIC_MMC
     mmc = find_mmc_device(fastboot_mmc_device);
