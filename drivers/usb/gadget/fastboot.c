@@ -746,7 +746,8 @@ static void fastboot_parse_cmd(char *cmdbuf)
     unsigned int bytes_rcvd;
     unsigned int rx_addr;
 
-    rx_length = hex2unsigned(cmdbuf + 9);
+    // format is "download:<rx_length>" so skip the "download:" part
+    rx_length = hex2unsigned(cmdbuf + 8 + 1);
 
     /* tell the host our max size if the download is too large */
     if (rx_length > CONFIG_FASTBOOT_MAX_DOWNLOAD_LEN) {
@@ -800,9 +801,13 @@ static void fastboot_parse_cmd(char *cmdbuf)
 
     // upload mmc contents to fastboot client
   } else if (strncmp(cmdbuf, "upload", 6) == 0) {
+    int partnum;
+   
+    // format is "upload:<partnum>" so skip the "upload:" part
+    partnum = hex2unsigned(cmdbuf + 6 + 1);
 
-    printf("Upload command received\n");
-    
+    printf("Upload command received for partition %d\n", partnum);
+      
     mmc_source = 0; // offset into mmc flash memory
 
     // assuming that mmc device has already been initialized
@@ -814,6 +819,11 @@ static void fastboot_parse_cmd(char *cmdbuf)
       fastboot_send_reply("FAILCouldn't find flash device");
       goto out;
     }
+
+    if (mmc_switch_partition(mmc, partnum, 1) < 0) {
+      fastboot_send_reply("FAILCouldn't init flash partition");
+      goto out;			
+    }
     
     // calculate how much free SDRAM we have
     // CONFIG_SYS_SDRAM_BASE is where the SDRAM is memory-mapped (0x70000000)
@@ -823,14 +833,15 @@ static void fastboot_parse_cmd(char *cmdbuf)
 
     ram_dest = (unsigned char *) CONFIG_LOADADDR; // where in ram to copy
 
+    //    upload_size = mmc->capacity;
+    upload_size = mmc->boot_size_mult * 128;
+    
     strcpy(ram_dest, "ATAD");
-    num_to_hex(32, mmc->capacity, ram_dest + 4); // add the data length (with a null terminator)
+    num_to_hex(32, upload_size, ram_dest + 4); // add the data length (with a null terminator)
 
     fastboot_send_reply_actual(ram_dest, 4 + 33);
-      
-    upload_size = mmc->capacity;
 
-    printf("Starting upload of %llu bytes\n", mmc->capacity);
+    printf("Starting upload of %llu bytes\n", upload_size);
     
     while(upload_size > 0) {
       
@@ -852,7 +863,7 @@ static void fastboot_parse_cmd(char *cmdbuf)
           goto out;
         }
 
-        printf("Computing CRC32 of previous chunk\n");
+        printf("  One packet read\n");
         crc_cac = crc32(crc_cac, (unsigned char*) ram_dest, pktsize);
         mmc_source += pktsize;
         ram_dest += pktsize;
@@ -873,11 +884,17 @@ static void fastboot_parse_cmd(char *cmdbuf)
     printf("CRC32: %x\n", crc_cac);
     fastboot_send_reply_actual((unsigned char *) &crc_cac, 4);
 
+    if (mmc_switch_partition(mmc, 0, 0) < 0) {
+      printf("Couldn't switch back to user partition!\n");
+      goto out;
+    }
+    
     goto out;
 
   } else if (strncmp(cmdbuf, "flash", 5) == 0) {
 
-    flash_addr = strtoul(cmdbuf + 6, NULL, 16);
+    // format is "flash:<flash_addr>" so skip the "flash:" part
+    flash_addr = hex2unsigned(cmdbuf + 5 + 1);
 
 #ifdef CONFIG_GENERIC_MMC
     mmc = find_mmc_device(fastboot_mmc_device);
